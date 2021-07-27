@@ -28,15 +28,6 @@ jobs:
         key: adt-auto-ingestor-deps
     - name: Build
       run: dotnet build --no-restore
-    - name: Move Output for Analysis
-      # You may pin to the exact commit or the version.
-      # uses: canastro/copy-action@7ddff6fc153a2ea2cd0fb88ed9750544c051e399
-      uses: canastro/copy-action@0.0.2
-      with:
-        # Source file
-        source: "/home/runner/work/adt-auto-ingestor/adt-auto-ingestor/bin/Debug/netcoreapp3.1/adt-auto-injester.dll"
-        # Target file
-        target: "/home/runner/work/adt-auto-ingestor/adt-auto-ingestor/analysis/adt-auto-injester.dll"
     - name: InferSharp
       uses: microsoft/infersharpaction@v1.0
       with:
