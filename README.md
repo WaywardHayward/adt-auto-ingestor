@@ -6,7 +6,7 @@
 
 A major issue when provisioning and populating azure digital twins is the up-front modelling and mapping required to ingest telemetry which you may already have hitting an event hub. 
 
-This Function App can be configured to listen to an Event Hub and ingest messages landing on that event hub into a Digital Twins Instance.
+This Function App can be configured to listen to an Event Hub and automatically ingest messages (provisioning the models and twins) landing on that event hub into a Digital Twins Instance.
 
 ## How to Run the Function Locally
 
