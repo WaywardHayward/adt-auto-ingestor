@@ -34,9 +34,9 @@ jobs:
       uses: canastro/copy-action@0.0.2
       with:
         # Source file
-        source: "bin/adt-auto-injester.dll"
+        source: "/home/runner/work/adt-auto-ingestor/adt-auto-ingestor/bin/Debug/netcoreapp3.1/adt-auto-injester.dll"
         # Target file
-        target: "analysis/adt-auto-injester.dll"
+        target: "/home/runner/work/adt-auto-ingestor/adt-auto-ingestor/analysis/adt-auto-injester.dll"
     - name: InferSharp
       uses: microsoft/infersharpaction@v1.0
       with:
