@@ -44,7 +44,7 @@ namespace adt_auto_ingester.Ingestion.Generic
         private void PopulateTwinId(EventData eventData, JObject message)
         {
             var twinId = string.Empty;
-            var deviceId = GetTwinId(message, _context.Configuration[Constants.ADT_TWIN_IDENTIFIERS]?.Split(";") ?? new[] { "message.DeviceId" });
+            var deviceId = GetTwinId(message, _context.Configuration[Constants.INGESTION_ADT_TWIN_IDENTIFIERS]?.Split(";") ?? new[] { "message.DeviceId" });
 
             if (!string.IsNullOrEmpty(twinId))
                 _currentTwinId = deviceId;
