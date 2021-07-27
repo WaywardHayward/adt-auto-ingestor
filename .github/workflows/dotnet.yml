@@ -32,5 +32,6 @@ jobs:
       uses: microsoft/infersharpaction@v1.0
       with:
         # The path where the binaries (.dll and .pdb) are located.
-        binary-path: "bin/adt-auto-ingester.dll"
-
+        binary-path: "bin"
+    - name: Infer# analysis results
+      run: echo "${{ steps.runinfersharp.outputs.results }}"
