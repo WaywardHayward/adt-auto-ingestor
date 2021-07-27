@@ -12,11 +12,11 @@ This Function App can be configured to listen to an Event Hub and automatically 
 
 To debug this function locally in vscode you will require the following items.
 
- - [Visual Studio Code](https://code.visualstudio.com/)
- - [Azure Tools Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-node-azure-pack)
- - [Azure Functions Core Tools](https://github.com/Azure/azure-functions-core-tools#installing)
- 
-  _ℹ️ You must have [Access to the Azure Digital Twins instance](https://docs.microsoft.com/en-us/azure/digital-twins/how-to-set-up-instance-powershell#set-up-user-access-permissions "More on how to grand access to an Azure Digital Twins Instance can be found here.") you are running against __and__ have the role "Azure Digital Twins Data Owner" as a minimum to run this function app._
+- [Visual Studio Code](https://code.visualstudio.com/)
+- [Azure Tools Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-node-azure-pack)
+- [Azure Functions Core Tools](https://github.com/Azure/azure-functions-core-tools#installing)
+
+_ℹ️ You must have [Access to the Azure Digital Twins instance](https://docs.microsoft.com/en-us/azure/digital-twins/how-to-set-up-instance-powershell#set-up-user-access-permissions "More on how to grand access to an Azure Digital Twins Instance can be found here.") you are running against __and__ have the role "Azure Digital Twins Data Owner" as a minimum to run this function app._
 
 This function app uses dotnetcore 3.1 LTS to build and run it use the standard dotnet commands.
 
