@@ -28,4 +28,9 @@ jobs:
         key: adt-auto-ingestor-deps
     - name: Build
       run: dotnet build --no-restore
+    - name: InferSharp
+      uses: microsoft/infersharpaction@v1.0
+      with:
+        # The path where the binaries (.dll and .pdb) are located.
+        binary-path: bin
 
