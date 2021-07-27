@@ -2,6 +2,8 @@
 # Azure Digital Twin Auto Ingestor
 > Function app which Auto ingests data from an Event Hub into Azure Digital Twins
 
+[![.NET](https://github.com/WaywardHayward/adt-auto-ingestor/actions/workflows/dotnet.yml/badge.svg)](https://github.com/WaywardHayward/adt-auto-ingestor/actions/workflows/dotnet.yml)
+
 A major issue when provisioning and populating azure digital twins is the up-front modelling and mapping required to ingest telemetry which you may already have hitting an event hub. 
 
 This Function App can be configured to listen to an Event Hub and ingest messages landing on that event hub into a Digital Twins Instance.
