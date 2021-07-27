@@ -200,6 +200,7 @@ namespace adt_auto_ingester.Ingestion.Face
             }
             catch (Exception ex)
             {
+                _context.Log.LogDebug($"Twin Probably Not Found:\n{ex}");
                 _context.Log.LogInformation($"Twin with Id {twinId} does not exist");
             }
             return null;
