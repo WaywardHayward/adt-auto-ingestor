@@ -63,7 +63,10 @@ namespace adt_auto_ingester.Ingestion.Generic
         {
             foreach(var path in identifierPaths){
                 var deviceId = GetTwinId(message, path);
-                if(!string.IsNullOrWhiteSpace(deviceId)) return deviceId;
+                if(!string.IsNullOrWhiteSpace(deviceId)){
+                    _context.Log.LogDebug($"Found Twin Id in Message via Property Path {path}");
+                     return deviceId;
+                }
             }
             return null;
         }
