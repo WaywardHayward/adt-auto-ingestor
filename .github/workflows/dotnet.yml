@@ -19,6 +19,13 @@ jobs:
         dotnet-version: 3.1.x
     - name: Restore dependencies
       run: dotnet restore
+    - name: Cache
+      uses: actions/cache@v2.1.6
+      with:
+        # A list of files, directories, and wildcard patterns to cache and restore
+        path: "bin/Azure.*.ddl"
+        # An explicit key for restoring and saving the cache
+        key: adt-auto-ingestor-deps
     - name: Build
       run: dotnet build --no-restore
 
