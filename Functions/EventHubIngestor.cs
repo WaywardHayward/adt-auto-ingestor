@@ -1,19 +1,19 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using adt_auto_ingester.AzureDigitalTwins;
 using adt_auto_ingester.Ingestion;
 using adt_auto_ingester.Models;
-using Azure;
 using Azure.DigitalTwins.Core;
 using Azure.Identity;
 using Microsoft.Azure.EventHubs;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Adt.AutoIngestor

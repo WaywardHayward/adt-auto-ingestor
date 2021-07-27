@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 using System.Linq;
 using System.Threading.Tasks;
 using adt_auto_ingester.Ingestion.Face;

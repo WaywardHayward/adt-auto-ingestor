@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 using adt_auto_ingester.Ingestion.Face;
 using adt_auto_ingester.Ingestion.Generic;
 using adt_auto_ingester.Ingestion.OPC;
