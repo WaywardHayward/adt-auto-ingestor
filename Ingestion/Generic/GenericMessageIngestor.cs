@@ -47,7 +47,7 @@ namespace adt_auto_ingester.Ingestion.Generic
             var deviceId = GetTwinId(message, _context.Configuration[Constants.INGESTION_ADT_TWIN_IDENTIFIERS]?.Split(";") ?? new[] { "message.DeviceId" });
 
             if (!string.IsNullOrEmpty(twinId))
-                _currentTwinId = deviceId;
+                _currentTwinId = deviceId; 
             else
                 _currentTwinId = eventData.SystemProperties.ContainsKey("iothub-connection-device-id") ? eventData.SystemProperties["iothub-connection-device-id"].ToString() : string.Empty;
 
