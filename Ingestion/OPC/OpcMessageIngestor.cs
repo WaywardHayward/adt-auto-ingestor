@@ -24,13 +24,27 @@ namespace adt_auto_ingester.Ingestion.OPC
 
         public async Task Ingest(EventData eventData, JObject message)
         {
-            var twinId = message.SelectToken("NodeId", false);
+            string twinId = ExtractTwinId(message);
 
             if (twinId == null)
                 return;
 
-            await IngestOpcItem(message, await EnsureModelExists(message));
+            await IngestOpcItem(message, twinId.ToString());
         }
+
+        private string ExtractTwinId(JObject message)
+        {
+            var twinId = message.SelectToken("NodeId", false);
+            var applicationUri = message.SelectToken("ApplicationUri", false)?.ToString();
+
+            twinId = twinId.ToString().Replace(";",string.Empty).Replace(" ",string.Empty).Trim();
+
+            if (!string.IsNullOrEmpty(applicationUri))
+                twinId = $"{applicationUri.Split(":")[1]}/{twinId}";
+
+            return twinId?.ToString();
+        }
+
         protected override Task<string> EnsureModelExists(JObject message)
         {
             return EnsureModelExists(message, $"dtmi:com:microsoft:autoingest:opcnode", "OPC Node");
@@ -74,6 +88,13 @@ namespace adt_auto_ingester.Ingestion.OPC
 
             opcNodeModel.Contents.Add(new DigitalTwinModelPropertyContent
             {
+                Name = "ApplicationUri",
+                Schema = "string",
+                Description = $"Auto Provisioned Property at {DateTime.UtcNow}"
+            });
+
+            opcNodeModel.Contents.Add(new DigitalTwinModelPropertyContent
+            {
                 Name = "SourceTimestamp",
                 Schema = "string",
                 Description = $"Auto Provisioned Property at {DateTime.UtcNow}"
@@ -109,21 +130,29 @@ namespace adt_auto_ingester.Ingestion.OPC
         {
             var patch = new JsonPatchDocument();
 
-            patch.AppendReplace("/$metadata/$model", modelId);
+            patch.AppendAdd("/$metadata/$model", modelId);
 
-            var value = message.SelectToken("Value", false) ?? message.SelectToken("Value.Value");
-            var timestamp = message.SelectToken("Value", false) ?? message.SelectToken("Value.SourceTimestamp");
-            var nodeId = twinId;
+            var value =  message.SelectToken("Value.Value", false) ?? message.SelectToken("Value", false);
+            var timestamp =  message.SelectToken("Value.SourceTimestamp") ?? message.SelectToken("SourceTimestamp", false);
+            var nodeId = message.SelectToken("NodeId", false);
+            var applicationUri = message.SelectToken("ApplicationUri", false);
             var displayName = message.SelectToken("DisplayName");
 
-            if (value!= null)
-                AddPropertyPatch(patch, twin, "Value", value.ToString());
+            if (nodeId != null)
+                AddPropertyPatch(patch, "NodeId", nodeId.ToString());
 
-            if (displayName!= null)
-                AddPropertyPatch(patch, twin,"DisplayName", displayName.ToString());
+            if (value != null)
+                AddPropertyPatch(patch, "Value", value.ToString());
 
-            if (timestamp!= null)
-                AddPropertyPatch(patch, twin,"Timestamp", timestamp.ToString());
+            if (displayName != null)
+                AddPropertyPatch(patch, "DisplayName", displayName.ToString());
+
+            if (timestamp != null)
+                AddPropertyPatch(patch, "SourceTimestamp", timestamp.ToString());
+
+
+            if (applicationUri != null)
+                AddPropertyPatch(patch, "ApplicationUri", applicationUri.ToString());
 
             await _context.DigitalTwinsClient.UpdateDigitalTwinAsync(twinId, patch, twin.ETag);
         }
@@ -140,19 +169,26 @@ namespace adt_auto_ingester.Ingestion.OPC
             };
 
 
-            var value = message.SelectToken("Value", false) ?? message.SelectToken("Value.Value");
-            var timestamp = message.SelectToken("Value", false) ?? message.SelectToken("Value.SourceTimestamp");
-            var nodeId = twinId;
+            var value = message.SelectToken("Value.Value", false)  ?? message.SelectToken("Value", false) ;
+            var timestamp = message.SelectToken("Value.SourceTimestamp") ?? message.SelectToken("SourceTimestamp", false);
+            var applicationUri = message.SelectToken("ApplicationUri", false);
+            var nodeId = message.SelectToken("NodeId", false);
             var displayName = message.SelectToken("DisplayName");
 
-            if (value!= null)
+            if (nodeId != null)
+                twin.Contents.Add("NodeId", nodeId.ToString());
+
+            if (value != null)
                 twin.Contents.Add("Value", value.ToString());
 
-            if (displayName!= null)
+            if (displayName != null)
                 twin.Contents.Add("DisplayName", displayName.ToString());
 
-            if (timestamp!= null)
-                twin.Contents.Add("Timestamp", timestamp.ToString());
+            if (timestamp != null)
+                twin.Contents.Add("SourceTimestamp", timestamp.ToString());
+
+            if (applicationUri != null)
+                twin.Contents.Add("ApplicationUri", applicationUri.ToString());
 
             _context.Log.LogInformation($"Updating or Creating Twin {twinId} in {_context.AdtUrl}");
 
