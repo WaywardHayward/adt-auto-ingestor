@@ -104,7 +104,7 @@ namespace adt_auto_ingester.Ingestion.Face
             var newModel = new DigitalTwinModel
             {
                 Id = modelId,
-                DisplayName = $"{name.Substring(0,Math.Min(30, name.Length))} Auto Provisioned Model"
+                DisplayName = $"{name.Substring(0, Math.Min(30, name.Length))} Auto Provisioned Model"
             };
 
             var messagePayLoad = message.SelectToken("message");
@@ -206,12 +206,9 @@ namespace adt_auto_ingester.Ingestion.Face
             return null;
         }
 
-        protected void AddPropertyPatch(JsonPatchDocument patch, BasicDigitalTwin twin, string propertyName, string propertyValue)
+        protected void AddPropertyPatch(JsonPatchDocument patch, string propertyName, string propertyValue)
         {
-            if (twin.Contents.Any(c => c.Key == propertyName))
-                patch.AppendReplace("/" + propertyName, propertyValue);
-            else
-                patch.AppendAdd("/" + propertyName, propertyValue);
+            patch.AppendAdd("/" + propertyName, propertyValue);
         }
     }
 }
