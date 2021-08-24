@@ -34,7 +34,7 @@ namespace adt_auto_ingester.Ingestion.OPC
 
         private string ExtractTwinId(JObject message)
         {
-            var twinId = message.SelectToken("NodeId", false);
+            var twinId = message.SelectToken("NodeId", false) ?? message.SelectToken("Id", false);
             var applicationUri = message.SelectToken("ApplicationUri", false)?.ToString();
 
             twinId = twinId.ToString().Replace(";",string.Empty).Replace(" ",string.Empty).Trim();

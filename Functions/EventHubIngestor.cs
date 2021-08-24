@@ -22,10 +22,12 @@ namespace Microsoft.Adt.AutoIngestor
     {
 
         private readonly IConfiguration _configuration;
+        private readonly MessageIngestorFactory _ingestorFactory;
 
-        public EventHubIngestor(IConfiguration configuration)
+        public EventHubIngestor(IConfiguration configuration, MessageIngestorFactory ingestorFactory)
         {
             _configuration = configuration;
+            _ingestorFactory = ingestorFactory;
         }
 
         [FunctionName("EventHubIngestor")]
@@ -60,8 +62,16 @@ namespace Microsoft.Adt.AutoIngestor
                     foreach (var message in messages)
                     {
                         var item = message as JObject;
-                        var ingestor = MessageIngestorFactory.Build(context, item);
-                        await ingestor.Ingest(eventData, item);
+                        var ingestor = _ingestorFactory.Build(context, item);
+
+                        if(ingestor != null)
+                        {
+                            await ingestor?.Ingest(eventData, item);
+                        }
+                        else
+                        {
+                            log.LogWarning("No ingestor for message - ignoring...");
+                        }
                     }
 
 
