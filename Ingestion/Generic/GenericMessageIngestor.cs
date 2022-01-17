@@ -46,7 +46,7 @@ namespace adt_auto_ingester.Ingestion.Generic
             var twinId = string.Empty;
             var deviceId = GetTwinId(message, _context.Configuration[Constants.INGESTION_ADT_TWIN_IDENTIFIERS]?.Split(";") ?? new[] { "message.DeviceId" });
 
-            if (!string.IsNullOrEmpty(twinId))
+            if (!string.IsNullOrEmpty(deviceId))
                 _currentTwinId = deviceId; 
             else
                 _currentTwinId = eventData.SystemProperties.ContainsKey("iothub-connection-device-id") ? eventData.SystemProperties["iothub-connection-device-id"].ToString() : string.Empty;
@@ -55,6 +55,7 @@ namespace adt_auto_ingester.Ingestion.Generic
 
         private string GetTwinId(JObject message, string identifierPath)
         {
+            _context.Log.LogInformation($"Looking For Twin Id {identifierPath} in Event");
             var deviceId = message.SelectToken(identifierPath, false);
             return deviceId?.Value<string>();
         }
@@ -64,7 +65,7 @@ namespace adt_auto_ingester.Ingestion.Generic
             foreach(var path in identifierPaths){
                 var deviceId = GetTwinId(message, path);
                 if(!string.IsNullOrWhiteSpace(deviceId)){
-                    _context.Log.LogInformation($"Found Twin Id in Message via Property Path {path}");
+                    _context.Log.LogInformation($"Found Twin Id {deviceId} in Message via Property Path {path}");
                      return deviceId;
                 }
             }
@@ -73,8 +74,27 @@ namespace adt_auto_ingester.Ingestion.Generic
 
         protected override async Task<string> EnsureModelExists(JObject message)
         {
-            var rawModelId = $"dtmi:com:microsoft:autoingest:{_context.Configuration[Constants.INGESTION_EVENT_HUB_NAME].Replace("-", string.Empty).ToLower()}:{_currentTwinId.Replace("-", string.Empty).ToLower()}";
-            return await EnsureModelExists(message, rawModelId, _currentTwinId.Split(":").LastOrDefault());
+            var modelId = GetModelId(message, _context.Configuration[Constants.INGESTION_ADT_MODEL_IDENTIFIERS]?.Split(";")) ?? $"{_context.Configuration[Constants.INGESTION_EVENT_HUB_NAME].Replace("-", string.Empty).ToLower()}:{_currentTwinId.Replace("-", string.Empty).ToLower()}";
+            var rawModelId = $"dtmi:com:microsoft:autoingest:{modelId}";
+            return await EnsureModelExists(message, rawModelId, modelId ?? _currentTwinId.Split(":").LastOrDefault());
+        }
+
+        private string GetModelId(JObject message, string[] identifierPaths)
+        {
+            if(identifierPaths == null)
+                return null;
+
+            foreach (var path in identifierPaths)
+            {
+                var modelId = message.SelectToken(path, false)?.Value<string>();
+
+                if (!string.IsNullOrWhiteSpace(modelId))
+                {
+                    _context.Log.LogInformation($"Found Model Id {modelId} in Message via Property Path {path}");
+                    return modelId;
+                }
+            }
+            return null;
         }
     }
 }
