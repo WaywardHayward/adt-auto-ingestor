@@ -16,6 +16,6 @@ namespace adt_auto_ingester.AzureDigitalTwins
         public string Description { get; set; }
         [JsonProperty("schema")]
 
-        public string Schema { get; set; }
+        public dynamic Schema { get; set; }
     }
 }

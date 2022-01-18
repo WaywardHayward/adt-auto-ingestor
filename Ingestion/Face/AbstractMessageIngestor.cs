@@ -28,7 +28,13 @@ namespace adt_auto_ingester.Ingestion.Face
             var modelsQuery = _context.DigitalTwinsClient.GetModelsAsync(new GetModelsOptions { IncludeModelDefinition = true });
             await foreach (var model in modelsQuery)
             {
-                models.Add(JsonConvert.DeserializeObject<DigitalTwinModel>(model.DtdlModel));
+                try
+                {
+                    models.Add(JsonConvert.DeserializeObject<DigitalTwinModel>(model.DtdlModel));
+                }catch(Exception ex)
+                {
+                    _context.Log.LogError(ex, $"Error Deserializing Model {model.Id} : {model.DtdlModel}");
+                }
             }
             return models;
         }

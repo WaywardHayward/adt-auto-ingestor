@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using adt_auto_ingester.Ingestion.Face;
@@ -23,23 +24,30 @@ namespace adt_auto_ingester.Ingestion.Generic
 
         public async Task Ingest(EventData eventData, JObject message)
         {
-            PopulateTwinId(eventData, message);
-
-            _context.Log.LogInformation("Checking For Twin Id in Event");
-
-            if (string.IsNullOrWhiteSpace(_currentTwinId))
+            try
             {
-                _context.Log.LogWarning($"Message {message.ToString()} has no deviceId ");
-                return;
-            }
+                PopulateTwinId(eventData, message);
 
-            if (message.SelectToken("Payload.SensorId", false)?.Value<string>() == "Heartbeat" || message.SelectToken("Payload.SensorId", false)?.Value<string>() == "ModelManager")
+                _context.Log.LogInformation("Checking For Twin Id in Event");
+
+                if (string.IsNullOrWhiteSpace(_currentTwinId))
+                {
+                    _context.Log.LogWarning($"Message {message.ToString()} has no deviceId ");
+                    return;
+                }
+
+                if (message.SelectToken("Payload.SensorId", false)?.Value<string>() == "Heartbeat" || message.SelectToken("Payload.SensorId", false)?.Value<string>() == "ModelManager")
+                {
+                    _context.Log.LogDebug($"Ignoring Heartbeat");
+                    return;
+                }
+
+                await WriteToTwin(message, _currentTwinId, await EnsureModelExists(message));
+            }
+            catch (Exception ex)
             {
-                _context.Log.LogDebug($"Ignoring Heartbeat");
-                return;
+                _context.Log.LogError(ex, $"Error Ingesting Generic Message {message.ToString()}");
             }
-
-            await WriteToTwin(message, _currentTwinId, await EnsureModelExists(message));
         }
         private void PopulateTwinId(EventData eventData, JObject message)
         {
@@ -47,26 +55,29 @@ namespace adt_auto_ingester.Ingestion.Generic
             var deviceId = GetTwinId(message, _context.Configuration[Constants.INGESTION_ADT_TWIN_IDENTIFIERS]?.Split(";") ?? new[] { "message.DeviceId" });
 
             if (!string.IsNullOrEmpty(deviceId))
-                _currentTwinId = deviceId; 
-            else
+                _currentTwinId = deviceId;
+
+            if (string.IsNullOrEmpty(_currentTwinId))
                 _currentTwinId = eventData.SystemProperties.ContainsKey("iothub-connection-device-id") ? eventData.SystemProperties["iothub-connection-device-id"].ToString() : string.Empty;
 
         }
 
         private string GetTwinId(JObject message, string identifierPath)
         {
-            _context.Log.LogInformation($"Looking For Twin Id {identifierPath} in Event");
+            _context.Log.LogInformation($"Looking For Twin Id {identifierPath} in Event {message.ToString()}");
             var deviceId = message.SelectToken(identifierPath, false);
             return deviceId?.Value<string>();
         }
 
-        private string GetTwinId(JObject message, string [] identifierPaths)
+        private string GetTwinId(JObject message, string[] identifierPaths)
         {
-            foreach(var path in identifierPaths){
+            foreach (var path in identifierPaths)
+            {
                 var deviceId = GetTwinId(message, path);
-                if(!string.IsNullOrWhiteSpace(deviceId)){
+                if (!string.IsNullOrWhiteSpace(deviceId))
+                {
                     _context.Log.LogInformation($"Found Twin Id {deviceId} in Message via Property Path {path}");
-                     return deviceId;
+                    return deviceId;
                 }
             }
             return null;
@@ -81,7 +92,7 @@ namespace adt_auto_ingester.Ingestion.Generic
 
         private string GetModelId(JObject message, string[] identifierPaths)
         {
-            if(identifierPaths == null)
+            if (identifierPaths == null)
                 return null;
 
             foreach (var path in identifierPaths)

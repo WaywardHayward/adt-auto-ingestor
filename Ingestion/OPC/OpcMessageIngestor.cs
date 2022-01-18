@@ -24,12 +24,19 @@ namespace adt_auto_ingester.Ingestion.OPC
 
         public async Task Ingest(EventData eventData, JObject message)
         {
-            string twinId = ExtractTwinId(message);
+            try
+            {
+                string twinId = ExtractTwinId(message);
 
-            if (twinId == null)
-                return;
+                if (twinId == null)
+                    return;
 
-            await IngestOpcItem(message, twinId.ToString());
+                await IngestOpcItem(message, twinId.ToString());
+            }
+            catch (Exception ex)
+            {
+                _context.Log.LogError(ex, $"Error Ingesting OPC Message {message.ToString()}");
+            }
         }
 
         private string ExtractTwinId(JObject message)
@@ -37,7 +44,7 @@ namespace adt_auto_ingester.Ingestion.OPC
             var twinId = message.SelectToken("NodeId", false) ?? message.SelectToken("Id", false);
             var applicationUri = message.SelectToken("ApplicationUri", false)?.ToString();
 
-            twinId = twinId.ToString().Replace(";",string.Empty).Replace(" ",string.Empty).Trim();
+            twinId = twinId.ToString().Replace(";", string.Empty).Replace(" ", string.Empty).Trim();
 
             if (!string.IsNullOrEmpty(applicationUri))
                 twinId = $"{applicationUri.Split(":")[1]}/{twinId}";
@@ -132,8 +139,8 @@ namespace adt_auto_ingester.Ingestion.OPC
 
             patch.AppendAdd("/$metadata/$model", modelId);
 
-            var value =  message.SelectToken("Value.Value", false) ?? message.SelectToken("Value", false);
-            var timestamp =  message.SelectToken("Value.SourceTimestamp") ?? message.SelectToken("SourceTimestamp", false);
+            var value = message.SelectToken("Value.Value", false) ?? message.SelectToken("Value", false);
+            var timestamp = message.SelectToken("Value.SourceTimestamp") ?? message.SelectToken("SourceTimestamp", false);
             var nodeId = message.SelectToken("NodeId", false);
             var applicationUri = message.SelectToken("ApplicationUri", false);
             var displayName = message.SelectToken("DisplayName");
@@ -169,7 +176,7 @@ namespace adt_auto_ingester.Ingestion.OPC
             };
 
 
-            var value = message.SelectToken("Value.Value", false)  ?? message.SelectToken("Value", false) ;
+            var value = message.SelectToken("Value.Value", false) ?? message.SelectToken("Value", false);
             var timestamp = message.SelectToken("Value.SourceTimestamp") ?? message.SelectToken("SourceTimestamp", false);
             var applicationUri = message.SelectToken("ApplicationUri", false);
             var nodeId = message.SelectToken("NodeId", false);
