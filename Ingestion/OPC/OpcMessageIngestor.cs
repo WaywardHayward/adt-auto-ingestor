@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using adt_auto_ingester.AzureDigitalTwins;
 using adt_auto_ingester.Ingestion.Face;
+using adt_auto_ingestor.AzureDigitalTwins;
 using Azure;
 using Azure.DigitalTwins.Core;
 using Microsoft.Azure.EventHubs;
@@ -17,7 +18,7 @@ namespace adt_auto_ingester.Ingestion.OPC
 {
     public class OpcMessageIngestor : AbstractMessageIngestor, IMessageIngestor
     {
-        public OpcMessageIngestor(IngestionContext context) : base(context)
+        public OpcMessageIngestor(IngestionContext context, DigitalTwinModelCache modelCache) : base(context, modelCache)
         {
             context.Log.LogInformation($"Processing OPC Message");
         }

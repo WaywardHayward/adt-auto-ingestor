@@ -11,34 +11,22 @@ using Azure.DigitalTwins.Core;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Azure;
+using adt_auto_ingestor.AzureDigitalTwins;
 
 namespace adt_auto_ingester.Ingestion.Face
 {
     public abstract class AbstractMessageIngestor
     {
         protected readonly IngestionContext _context;
-        protected AbstractMessageIngestor(IngestionContext context)
+        protected readonly DigitalTwinModelCache _modelCache;
+
+        protected AbstractMessageIngestor(IngestionContext context, DigitalTwinModelCache modelCache)
         {
             _context = context;
+            _modelCache = modelCache; 
         }
 
-        protected async Task<List<DigitalTwinModel>> GetAllModels()
-        {
-            var models = new List<DigitalTwinModel>();
-            var modelsQuery = _context.DigitalTwinsClient.GetModelsAsync(new GetModelsOptions { IncludeModelDefinition = true });
-            await foreach (var model in modelsQuery)
-            {
-                try
-                {
-                    models.Add(JsonConvert.DeserializeObject<DigitalTwinModel>(model.DtdlModel));
-                }catch(Exception ex)
-                {
-                    _context.Log.LogError(ex, $"Error Deserializing Model {model.Id} : {model.DtdlModel}");
-                }
-            }
-            return models;
-        }
-
+        protected Task<List<DigitalTwinModel>> GetAllModels() => _modelCache.GetModels();
         protected abstract Task<string> EnsureModelExists(JObject message);
 
         protected virtual async Task<string> EnsureModelExists(JObject message, string rawModelId, string name)
@@ -50,20 +38,20 @@ namespace adt_auto_ingester.Ingestion.Face
 
             if (model == null)
             {
-                _context.Log.LogInformation($"Did Not Find Auto Model {modelId} in {_context.AdtUrl}");
+                _context.Log.LogWarning($"Did Not Find Auto Model {modelId} in {_context.AdtUrl}");
                 await CreateAutoIngestModel(message, name, modelId, model);
             }
             else
             {
                 modelId = model.Id;
-                _context.Log.LogInformation($"Model found for {modelId} {JsonConvert.SerializeObject(model)}");
+                _context.Log.LogTrace($"Model found for {modelId}");
 
                 var messagePayLoad = message.SelectToken("message");
 
                 if (messagePayLoad != null)
                     message = messagePayLoad as JObject;
 
-                _context.Log.LogInformation("Checking Properties Exist in Model...");
+                _context.Log.LogTrace("Checking Properties Exist in Model...");
 
                 var modelContent = JsonConvert.DeserializeObject<DigitalTwinModel>(JsonConvert.SerializeObject(model));
                 var modelVersion = int.Parse(model.Id.Split(";").LastOrDefault());
@@ -73,7 +61,7 @@ namespace adt_auto_ingester.Ingestion.Face
                 {
 
 
-                    _context.Log.LogInformation($"Found {missingProperties.Count()} missing Properties");
+                    _context.Log.LogTrace($"Found {missingProperties.Count()} missing Properties");
 
                     modelVersion++;
 
@@ -90,12 +78,13 @@ namespace adt_auto_ingester.Ingestion.Face
                     modelContent.Id = modelId;
                     var modelDtdl = JsonConvert.SerializeObject(modelContent, Formatting.Indented);
 
-                    _context.Log.LogInformation($"Creating Auto Model {modelId} in {_context.AdtUrl}\n: {modelDtdl}");
+                    _context.Log.LogTrace($"Creating Auto Model {modelId} in {_context.AdtUrl}\n: {modelDtdl}");
                     await _context.DigitalTwinsClient.CreateModelsAsync(new string[] { modelDtdl });
+                    _modelCache.AddModel(modelId, modelContent);
                 }
                 else
                 {
-                    _context.Log.LogInformation("No Properties missing");
+                    _context.Log.LogTrace("No Properties missing");
                 }
 
 
@@ -129,11 +118,11 @@ namespace adt_auto_ingester.Ingestion.Face
             }
 
             var modelDtdl = JsonConvert.SerializeObject(newModel, Formatting.Indented);
-            _context.Log.LogInformation($"Creating Auto Model {modelId} in {_context.AdtUrl}\n: {modelDtdl}");
+            _context.Log.LogTrace($"Creating Auto Model {modelId} in {_context.AdtUrl}\n: {modelDtdl}");
             var models = await _context.DigitalTwinsClient.CreateModelsAsync(new string[] { modelDtdl });
 
             if (models.Value.Any())
-                _context.Log.LogInformation($"Created Auto Model {modelId} in {_context.AdtUrl}");
+                _context.Log.LogTrace($"Created Auto Model {modelId} in {_context.AdtUrl}");
 
         }
 
@@ -145,7 +134,7 @@ namespace adt_auto_ingester.Ingestion.Face
 
             if (messagePayLoad != null)
             {
-                _context.Log.LogInformation($"Found message payload {message["message"].ToString()}");
+                _context.Log.LogTrace($"Found message payload {message["message"].ToString()}");
                 message = messagePayLoad.Value<JObject>();
             }
 
@@ -159,7 +148,7 @@ namespace adt_auto_ingester.Ingestion.Face
                 await UpdateExistingTwin(message, twinId, modelId, twin);
             }
 
-            _context.Log.LogInformation($"Twin Data Applied to  {twinId} in {_context.AdtUrl}");
+            _context.Log.LogTrace($"Twin Data Applied to  {twinId} in {_context.AdtUrl}");
         }
 
         protected async Task UpdateExistingTwin(JObject message, string twinId, string modelId, BasicDigitalTwin twin)
@@ -193,7 +182,7 @@ namespace adt_auto_ingester.Ingestion.Face
             foreach (var property in message?.Properties())
                 newTwin.Contents.Add(property.Name, message.SelectToken(property.Name).ToString());
 
-            _context.Log.LogInformation($"Updating or Creating Twin {twinId} in {_context.AdtUrl}");
+            _context.Log.LogTrace($"Updating or Creating Twin {twinId} in {_context.AdtUrl}");
 
             await _context.DigitalTwinsClient.CreateOrReplaceDigitalTwinAsync(twinId, newTwin);
         }
@@ -207,7 +196,7 @@ namespace adt_auto_ingester.Ingestion.Face
             catch (Exception ex)
             {
                 _context.Log.LogDebug($"Twin Probably Not Found:\n{ex}");
-                _context.Log.LogInformation($"Twin with Id {twinId} does not exist");
+                _context.Log.LogTrace($"Twin with Id {twinId} does not exist");
             }
             return null;
         }

@@ -24,6 +24,8 @@ namespace Microsoft.Adt.AutoIngestor
         private readonly IConfiguration _configuration;
         private readonly MessageIngestorFactory _ingestorFactory;
 
+        
+
         public EventHubIngestor(IConfiguration configuration, MessageIngestorFactory ingestorFactory)
         {
             _configuration = configuration;

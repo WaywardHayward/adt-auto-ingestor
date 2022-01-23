@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using adt_auto_ingester.Ingestion.Face;
 using adt_auto_ingester.Models;
+using adt_auto_ingestor.AzureDigitalTwins;
 using Microsoft.Azure.EventHubs;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
@@ -17,7 +18,7 @@ namespace adt_auto_ingester.Ingestion.Generic
 
         private string _currentTwinId;
 
-        public GenericMessageIngestor(IngestionContext context) : base(context)
+        public GenericMessageIngestor(IngestionContext context, DigitalTwinModelCache modelCache) : base(context, modelCache)
         {
             context.Log.LogInformation($"Processing Generic Message");
         }
@@ -28,7 +29,7 @@ namespace adt_auto_ingester.Ingestion.Generic
             {
                 PopulateTwinId(eventData, message);
 
-                _context.Log.LogInformation("Checking For Twin Id in Event");
+                _context.Log.LogTrace("Checking For Twin Id in Event");
 
                 if (string.IsNullOrWhiteSpace(_currentTwinId))
                 {
@@ -38,7 +39,7 @@ namespace adt_auto_ingester.Ingestion.Generic
 
                 if (message.SelectToken("Payload.SensorId", false)?.Value<string>() == "Heartbeat" || message.SelectToken("Payload.SensorId", false)?.Value<string>() == "ModelManager")
                 {
-                    _context.Log.LogDebug($"Ignoring Heartbeat");
+                    _context.Log.LogTrace($"Ignoring Heartbeat");
                     return;
                 }
 
@@ -76,7 +77,7 @@ namespace adt_auto_ingester.Ingestion.Generic
                 var deviceId = GetTwinId(message, path);
                 if (!string.IsNullOrWhiteSpace(deviceId))
                 {
-                    _context.Log.LogInformation($"Found Twin Id {deviceId} in Message via Property Path {path}");
+                    _context.Log.LogTrace($"Found Twin Id {deviceId} in Message via Property Path {path}");
                     return deviceId;
                 }
             }

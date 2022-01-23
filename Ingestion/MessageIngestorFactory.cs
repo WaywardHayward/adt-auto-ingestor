@@ -6,6 +6,7 @@ using adt_auto_ingester.Ingestion.Face;
 using adt_auto_ingester.Ingestion.Generic;
 using adt_auto_ingester.Ingestion.OPC;
 using adt_auto_ingester.Ingestion.TwinIQ;
+using adt_auto_ingestor.AzureDigitalTwins;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
@@ -20,6 +21,8 @@ namespace adt_auto_ingester.Ingestion
         private bool _ingestTIQ;
         private bool _ingestGeneric;
 
+        private DigitalTwinModelCache _modelCache;
+        
         public MessageIngestorFactory(IConfiguration config)
         {
             _config = config;
@@ -32,12 +35,15 @@ namespace adt_auto_ingester.Ingestion
 
             if (Boolean.TryParse(config["INGESTION_GENERIC_ENABLED"], out var genIngestEnabled))
                 _ingestGeneric = genIngestEnabled;
-
+            
+            _modelCache = new DigitalTwinModelCache();
 
         }
 
         public IMessageIngestor Build(IngestionContext context, JObject message)
         {
+            _modelCache.Context = context;
+
             var messagePayLoad = message.SelectToken("message");
 
             if (messagePayLoad != null)
@@ -46,13 +52,13 @@ namespace adt_auto_ingester.Ingestion
             context.Log.LogDebug(message.ToString());
 
             if (ShouldIngestTwinIQ(context,message))
-                return new TwinIqMessageIngestor(context);
+                return new TwinIqMessageIngestor(context, _modelCache);
             
             if (ShouldIngestOPC(context,message))
-                return new OpcMessageIngestor(context);
+                return new OpcMessageIngestor(context, _modelCache);
             
             if(ShouldIngestGeneric(context,message))
-                return new GenericMessageIngestor(context);
+                return new GenericMessageIngestor(context, _modelCache);
             
             return null;
         }

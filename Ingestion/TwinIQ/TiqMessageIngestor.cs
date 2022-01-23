@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using adt_auto_ingester.AzureDigitalTwins;
 using adt_auto_ingester.Ingestion.Face;
+using adt_auto_ingestor.AzureDigitalTwins;
 using Azure;
 using Azure.DigitalTwins.Core;
 using Microsoft.Azure.EventHubs;
@@ -19,7 +20,7 @@ namespace adt_auto_ingester.Ingestion.TwinIQ
     {
         private string _currentTwinId;
 
-        public TwinIqMessageIngestor(IngestionContext context) : base(context)
+        public TwinIqMessageIngestor(IngestionContext context, DigitalTwinModelCache modelCache) : base(context, modelCache)
         {
             context.Log.LogInformation($"Processing Twin IQ Message");
         }
