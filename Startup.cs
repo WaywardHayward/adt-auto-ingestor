@@ -1,7 +1,12 @@
 
 using System;
 using adt_auto_ingester;
+using adt_auto_ingester.AzureDigitalTwins;
 using adt_auto_ingester.Ingestion;
+using adt_auto_ingester.Ingestion.Generic;
+using adt_auto_ingester.Ingestion.OPC;
+using adt_auto_ingester.Ingestion.TwinIQ;
+using adt_auto_ingestor.AzureDigitalTwins;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +24,16 @@ namespace adt_auto_ingester
 
         public override void Configure(IFunctionsHostBuilder builder)
         {
+            builder.Services.AddLogging();
+            builder.Services.AddSingleton<DigitalTwinsClientProvider>();
+            builder.Services.AddTransient<IngestionContext>();
+            builder.Services.AddSingleton<GenericMessageTwinIdProvider>();
+            builder.Services.AddSingleton<TiqTwinIdProvider>();
+            builder.Services.AddSingleton<OpcMessageTwinIdProvider>();
+            builder.Services.AddSingleton<GenericMessageIngestor>();
+            builder.Services.AddSingleton<OpcMessageIngestor>();
+            builder.Services.AddSingleton<TwinIqMessageIngestor>();
+            builder.Services.AddSingleton<DigitalTwinModelCache>();
             builder.Services.AddSingleton<MessageIngestorFactory>();
         }
     }

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using adt_auto_ingester.AzureDigitalTwins;
-using adt_auto_ingester.Ingestion;
 using Azure.DigitalTwins.Core;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -12,26 +11,47 @@ namespace adt_auto_ingestor.AzureDigitalTwins
 {
     public class DigitalTwinModelCache
     {
-        private Dictionary<string, DigitalTwinModel> _modelCache = new Dictionary<string, DigitalTwinModel>();
+        private Dictionary<string, List<DigitalTwinModel>> _modelCache = new Dictionary<string, List<DigitalTwinModel>>();
 
         private DateTime _nextModelFetch = DateTime.MinValue;
-        public IngestionContext Context { get; internal set; }
+        private readonly DigitalTwinsClientProvider _digitalTwinClientProvider;
+        private readonly ILogger<DigitalTwinModelCache> _logger;
 
-
-        public DigitalTwinModelCache()
+        public DigitalTwinModelCache(ILogger<DigitalTwinModelCache> logger, DigitalTwinsClientProvider clientProvider)
         {
+            _digitalTwinClientProvider = clientProvider;
+            _logger = logger;
+        }
+
+        public bool ModelIsCached(string modelId)
+        {
+            return _modelCache.ContainsKey(modelId);
+        }
+
+        public async Task<List<DigitalTwinModel>> GetModelsForId(string modelId){
+            if (_nextModelFetch > DateTime.UtcNow)
+            {
+                _logger.LogTrace("Using model Cache");
+                return _modelCache.ContainsKey(modelId) ? _modelCache[modelId] : new List<DigitalTwinModel>();
+            }
+            await RebuildCache();
+            return await GetModelsForId(modelId);         
         }
 
         public async Task<List<DigitalTwinModel>> GetModels()
         {
-           if (_nextModelFetch > DateTime.UtcNow)
+            if (_nextModelFetch > DateTime.UtcNow)
             {
-                Context.Log.LogTrace("Using model Cache");
-                return _modelCache.Values.ToList();
+                _logger.LogTrace("Using model Cache");
+                return _modelCache.Values.SelectMany(s => s).ToList();
             }
-            Context.Log.LogInformation("All Keys {0}", string.Join(",", _modelCache.Keys));
-            Context.Log.LogInformation("Fetching all models From Twin");
+            _logger.LogInformation("All Keys {0}", string.Join(",", _modelCache.Keys));
+            _logger.LogInformation("Fetching all models From Twin");
+            return await RebuildCache();
+        }
 
+        private async Task<List<DigitalTwinModel>> RebuildCache()
+        {
             var models = await GetModelsFromTwin();
 
             lock (_modelCache)
@@ -40,8 +60,10 @@ namespace adt_auto_ingestor.AzureDigitalTwins
 
                 foreach (var model in models)
                 {
-                    if (!_modelCache.ContainsKey(model.Id))
-                        _modelCache.Add(model.Id, model);
+                    if (!_modelCache.ContainsKey(model.ModelId.Value))
+                        _modelCache.Add(model.ModelId.Value, new List<DigitalTwinModel>() { model });
+                    else
+                        _modelCache[model.ModelId.Value].Add(model);
                 }
 
                 _nextModelFetch = DateTime.UtcNow.AddMinutes(5);
@@ -54,7 +76,7 @@ namespace adt_auto_ingestor.AzureDigitalTwins
         private async Task<List<DigitalTwinModel>> GetModelsFromTwin()
         {
             var models = new List<DigitalTwinModel>();
-            var modelsQuery = Context.DigitalTwinsClient.GetModelsAsync(new GetModelsOptions { IncludeModelDefinition = true });
+            var modelsQuery = _digitalTwinClientProvider.GetClient().GetModelsAsync(new GetModelsOptions { IncludeModelDefinition = true });
             await foreach (var model in modelsQuery)
             {
                 try
@@ -63,7 +85,7 @@ namespace adt_auto_ingestor.AzureDigitalTwins
                 }
                 catch (Exception ex)
                 {
-                    Context.Log.LogError(ex, $"Error Deserializing Model {model.Id}");
+                    _logger.LogError(ex, $"Error Deserializing Model {model.Id}");
                 }
             }
 
@@ -72,8 +94,11 @@ namespace adt_auto_ingestor.AzureDigitalTwins
 
         internal void AddModel(string modelId, DigitalTwinModel modelContent)
         {
-            if(!_modelCache.ContainsKey(modelId))
-                _modelCache.Add(modelId, modelContent);
+            if(!_modelCache.ContainsKey(modelContent.ModelId.Value))
+                _modelCache.Add(modelId, new List<DigitalTwinModel> { modelContent});
+            else
+                _modelCache[modelContent.ModelId.Value].Add(modelContent);
+            
         }
     }
 }

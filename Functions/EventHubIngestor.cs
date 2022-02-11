@@ -7,9 +7,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using adt_auto_ingester.Ingestion;
-using adt_auto_ingester.Models;
-using Azure.DigitalTwins.Core;
-using Azure.Identity;
 using Microsoft.Azure.EventHubs;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Configuration;
@@ -23,30 +20,19 @@ namespace Microsoft.Adt.AutoIngestor
 
         private readonly IConfiguration _configuration;
         private readonly MessageIngestorFactory _ingestorFactory;
+        private readonly IngestionContext _context;
 
-        
-
-        public EventHubIngestor(IConfiguration configuration, MessageIngestorFactory ingestorFactory)
+        public EventHubIngestor(IConfiguration configuration, MessageIngestorFactory ingestorFactory, IngestionContext context)
         {
             _configuration = configuration;
             _ingestorFactory = ingestorFactory;
+            _context = context;
         }
 
         [FunctionName("EventHubIngestor")]
         public async Task Run([EventHubTrigger("%INGESTION_EVENTHUB_NAME%", Connection = "INGESTION_EVENTHUB_CONNECTION_STRING", ConsumerGroup = "%INGESTION_EVENTHUB_CONSUMERGROUP%")] EventData[] events, ILogger log)
         {
             var exceptions = new List<Exception>();
-            var adtUrl = _configuration[Constants.ADT_URL_SETTING];
-            var client = new DigitalTwinsClient(new Uri(adtUrl), new ManagedIdentityCredential());
-
-            var context = new IngestionContext
-            {
-                DigitalTwinsClient = client,
-                AdtUrl = adtUrl,
-                Log = log,
-                Exceptions = exceptions,
-                Configuration = _configuration
-            };
 
             log.LogInformation($"Messages Recieved {events.Length}");
 
@@ -54,8 +40,11 @@ namespace Microsoft.Adt.AutoIngestor
             {
                 try
                 {
+                    _context.SetIngestionMessage(eventData);
                     var messageBody = Encoding.UTF8.GetString(eventData.Body.Array, eventData.Body.Offset, eventData.Body.Count);
+                                       
                     JArray messages = new JArray();
+                    
                     if (messageBody.StartsWith("["))
                         messages = JArray.Parse(messageBody);
                     else
@@ -64,11 +53,12 @@ namespace Microsoft.Adt.AutoIngestor
                     foreach (var message in messages)
                     {
                         var item = message as JObject;
-                        var ingestor = _ingestorFactory.Build(context, item);
+                        var messageContext = MessageContext.FromIngestionContext(_context, item);
+                        var ingestor = _ingestorFactory.Build(messageContext);
 
                         if(ingestor != null)
                         {
-                            await ingestor?.Ingest(eventData, item);
+                            await ingestor?.Ingest(messageContext);
                         }
                         else
                         {

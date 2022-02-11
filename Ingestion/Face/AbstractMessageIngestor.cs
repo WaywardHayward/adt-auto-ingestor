@@ -12,63 +12,58 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Azure;
 using adt_auto_ingestor.AzureDigitalTwins;
+using System.Globalization;
 
 namespace adt_auto_ingester.Ingestion.Face
 {
     public abstract class AbstractMessageIngestor
     {
-        protected readonly IngestionContext _context;
         protected readonly DigitalTwinModelCache _modelCache;
+        protected readonly ITwinIdProvider _twinIdProvider;
+        protected readonly ILogger _logger;
 
-        protected AbstractMessageIngestor(IngestionContext context, DigitalTwinModelCache modelCache)
+        protected AbstractMessageIngestor(DigitalTwinModelCache modelCache, ITwinIdProvider twinIdProvider, ILogger log)
         {
-            _context = context;
-            _modelCache = modelCache; 
+            _modelCache = modelCache;
+            _twinIdProvider = twinIdProvider;
+            _logger = log;
         }
 
-        protected Task<List<DigitalTwinModel>> GetAllModels() => _modelCache.GetModels();
-        protected abstract Task<string> EnsureModelExists(JObject message);
+        protected Task<List<DigitalTwinModel>> GetAllModels(string modelId) => _modelCache.GetModelsForId(modelId);
+        protected abstract Task<string> EnsureModelExists(MessageContext context);
 
-        protected virtual async Task<string> EnsureModelExists(JObject message, string rawModelId, string name)
+        protected virtual async Task<string> EnsureModelExists(MessageContext context, string rawModelId, string name)
         {
             var modelId = $"{rawModelId};1";
-            var models = await GetAllModels();
-            var modelExists = models.Any(m => m.Id.Split(";")[0] == rawModelId);
-            var model = modelExists ? models.Where(m => m.Id.Split(";")[0] == rawModelId).OrderByDescending(m => int.Parse(m.Id.Split(";")[1])).FirstOrDefault() : null;
+            var models = await GetAllModels(rawModelId);
+            var model =  models.OrderByDescending(m => m.ModelVersion.Value).FirstOrDefault();
 
             if (model == null)
             {
-                _context.Log.LogWarning($"Did Not Find Auto Model {modelId} in {_context.AdtUrl}");
-                await CreateAutoIngestModel(message, name, modelId, model);
+                _logger.LogWarning($"Did Not Find Auto Model {modelId} in {context.IngestionContext.AdtUrl}");
+                await CreateAutoIngestModel(context, name, modelId, model);
             }
             else
             {
                 modelId = model.Id;
-                _context.Log.LogTrace($"Model found for {modelId}");
-
-                var messagePayLoad = message.SelectToken("message");
-
-                if (messagePayLoad != null)
-                    message = messagePayLoad as JObject;
-
-                _context.Log.LogTrace("Checking Properties Exist in Model...");
+                _logger.LogTrace($"Model found for {modelId}");
+                _logger.LogTrace("Checking Properties Exist in Model...");
 
                 var modelContent = JsonConvert.DeserializeObject<DigitalTwinModel>(JsonConvert.SerializeObject(model));
-                var modelVersion = int.Parse(model.Id.Split(";").LastOrDefault());
-                var missingProperties = message.Properties().Where(p => modelContent.Contents.All(c => c.Name != p.Name));
+                var modelVersion = model.ModelVersion.Value;
+                var missingProperties = context.MessageProperties.Value.Keys.Where(p => !modelContent.PropertyContents.Value.ContainsKey(p));
 
                 if (missingProperties.Any())
                 {
 
-
-                    _context.Log.LogTrace($"Found {missingProperties.Count()} missing Properties");
+                    _logger.LogTrace($"Found {missingProperties.Count()} missing Properties");
 
                     modelVersion++;
 
                     foreach (var missingProperty in missingProperties)
                         modelContent.Contents.Add(new DigitalTwinModelPropertyContent
                         {
-                            Name = missingProperty.Name,
+                            Name = missingProperty,
                             Schema = "string",
                             Description = $"Auto Provisioned Property at {DateTime.UtcNow}"
                         });
@@ -78,13 +73,13 @@ namespace adt_auto_ingester.Ingestion.Face
                     modelContent.Id = modelId;
                     var modelDtdl = JsonConvert.SerializeObject(modelContent, Formatting.Indented);
 
-                    _context.Log.LogTrace($"Creating Auto Model {modelId} in {_context.AdtUrl}\n: {modelDtdl}");
-                    await _context.DigitalTwinsClient.CreateModelsAsync(new string[] { modelDtdl });
+                    _logger.LogTrace($"Creating Auto Model {modelId} in {context.IngestionContext.AdtUrl}\n: {modelDtdl}");
+                    await context.IngestionContext.DigitalTwinsClient.CreateModelsAsync(new string[] { modelDtdl });
                     _modelCache.AddModel(modelId, modelContent);
                 }
                 else
                 {
-                    _context.Log.LogTrace("No Properties missing");
+                    _logger.LogTrace("No Properties missing");
                 }
 
 
@@ -93,7 +88,7 @@ namespace adt_auto_ingester.Ingestion.Face
             return modelId;
         }
 
-        private async Task CreateAutoIngestModel(JObject message, string name, string modelId, DigitalTwinModel model)
+        private async Task CreateAutoIngestModel(MessageContext context, string name, string modelId, DigitalTwinModel model)
         {
 
             var newModel = new DigitalTwinModel
@@ -101,74 +96,60 @@ namespace adt_auto_ingester.Ingestion.Face
                 Id = modelId,
                 DisplayName = $"{name.Substring(0, Math.Min(30, name.Length))} Auto Provisioned Model"
             };
-
-            var messagePayLoad = message.SelectToken("message");
-
-            if (messagePayLoad != null)
-                message = messagePayLoad as JObject;
-
-            foreach (var property in message.Properties())
+          
+            foreach (var property in context.MessageProperties.Value.Keys)
             {
                 newModel.Contents.Add(new DigitalTwinModelPropertyContent
                 {
-                    Name = property.Name,
+                    Name = property,
                     Schema = "string",
                     Description = $"Auto Provisioned Property at {DateTime.UtcNow}"
                 });
             }
 
             var modelDtdl = JsonConvert.SerializeObject(newModel, Formatting.Indented);
-            _context.Log.LogTrace($"Creating Auto Model {modelId} in {_context.AdtUrl}\n: {modelDtdl}");
-            var models = await _context.DigitalTwinsClient.CreateModelsAsync(new string[] { modelDtdl });
+            _logger.LogTrace($"Creating Auto Model {modelId} in {context.IngestionContext.AdtUrl}\n: {modelDtdl}");
+            var models = await context.IngestionContext.DigitalTwinsClient.CreateModelsAsync(new string[] { modelDtdl });
 
             if (models.Value.Any())
-                _context.Log.LogTrace($"Created Auto Model {modelId} in {_context.AdtUrl}");
+                _logger.LogTrace($"Created Auto Model {modelId} in {context.IngestionContext.AdtUrl}");
 
         }
 
-        protected virtual async Task WriteToTwin(JObject message, string twinId, string modelId)
+        protected virtual async Task WriteToTwin(MessageContext context, string twinId, string modelId)
         {
-            var twin = await GetTwin(twinId);
-
-            var messagePayLoad = message.SelectToken("message");
-
-            if (messagePayLoad != null)
-            {
-                _context.Log.LogTrace($"Found message payload {message["message"].ToString()}");
-                message = messagePayLoad.Value<JObject>();
-            }
-
-
+            var twin = await GetTwin(context, twinId);
+           
             if (twin == null)
             {
-                await CreateNewTwin(message, twinId, modelId);
+                await CreateNewTwin(context, twinId, modelId);
             }
             else
             {
-                await UpdateExistingTwin(message, twinId, modelId, twin);
+                await UpdateExistingTwin(context, twinId, modelId, twin);
             }
 
-            _context.Log.LogTrace($"Twin Data Applied to  {twinId} in {_context.AdtUrl}");
+            _logger.LogTrace($"Twin Data Applied to  {twinId} in {context.IngestionContext.AdtUrl}");
         }
 
-        protected async Task UpdateExistingTwin(JObject message, string twinId, string modelId, BasicDigitalTwin twin)
+        protected async Task UpdateExistingTwin(MessageContext context, string twinId, string modelId, BasicDigitalTwin twin)
         {
             var patch = new JsonPatchDocument();
 
             patch.AppendReplace("/$metadata/$model", modelId);
 
-            foreach (var property in message?.Properties())
+            foreach (var property in context.MessageProperties.Value.Keys)
             {
-                if (twin.Contents.Any(c => c.Key == property.Name))
-                    patch.AppendReplace("/" + property.Name, message.SelectToken(property.Name).ToString());
+                if (twin.Contents.ContainsKey(property))
+                    patch.AppendReplace("/" + property, ((JValue)context.Message?.SelectToken(property)).ToString(CultureInfo.InvariantCulture));
                 else
-                    patch.AppendAdd("/" + property.Name, message.SelectToken(property.Name).ToString());
+                    patch.AppendAdd("/" + property, ((JValue)context.Message?.SelectToken(property))?.ToString(CultureInfo.InvariantCulture));
             }
 
-            await _context.DigitalTwinsClient.UpdateDigitalTwinAsync(twinId, patch, twin.ETag);
+            await context.IngestionContext.DigitalTwinsClient.UpdateDigitalTwinAsync(twinId, patch, twin.ETag);
         }
 
-        protected async Task CreateNewTwin(JObject message, string twinId, string modelId)
+        protected async Task CreateNewTwin(MessageContext context, string twinId, string modelId)
         {
             var newTwin = new BasicDigitalTwin()
             {
@@ -179,24 +160,24 @@ namespace adt_auto_ingester.Ingestion.Face
                 }
             };
 
-            foreach (var property in message?.Properties())
-                newTwin.Contents.Add(property.Name, message.SelectToken(property.Name).ToString());
+            foreach (var property in context.MessageProperties.Value.Keys)
+                newTwin.Contents.Add(property, ((JValue)context.Message.SelectToken(property)).ToString(CultureInfo.InvariantCulture));
 
-            _context.Log.LogTrace($"Updating or Creating Twin {twinId} in {_context.AdtUrl}");
+            _logger.LogTrace($"Updating or Creating Twin {twinId} in {context.IngestionContext.AdtUrl}");
 
-            await _context.DigitalTwinsClient.CreateOrReplaceDigitalTwinAsync(twinId, newTwin);
+            await context.IngestionContext.DigitalTwinsClient.CreateOrReplaceDigitalTwinAsync(twinId, newTwin);
         }
 
-        protected async Task<BasicDigitalTwin> GetTwin(string twinId)
+        protected async Task<BasicDigitalTwin> GetTwin(MessageContext context, string twinId)
         {
             try
             {
-                return await _context.DigitalTwinsClient.GetDigitalTwinAsync<BasicDigitalTwin>(twinId);
+                return await context.IngestionContext.DigitalTwinsClient.GetDigitalTwinAsync<BasicDigitalTwin>(twinId);
             }
             catch (Exception ex)
             {
-                _context.Log.LogDebug($"Twin Probably Not Found:\n{ex}");
-                _context.Log.LogTrace($"Twin with Id {twinId} does not exist");
+                _logger.LogDebug($"Twin Probably Not Found:\n{ex}");
+                _logger.LogTrace($"Twin with Id {twinId} does not exist");
             }
             return null;
         }

@@ -18,25 +18,25 @@ namespace adt_auto_ingester.Ingestion.OPC
 {
     public class OpcMessageIngestor : AbstractMessageIngestor, IMessageIngestor
     {
-        public OpcMessageIngestor(IngestionContext context, DigitalTwinModelCache modelCache) : base(context, modelCache)
+        public OpcMessageIngestor(ILogger<OpcMessageIngestor> log, DigitalTwinModelCache modelCache, OpcMessageTwinIdProvider idProvider) : base(modelCache, idProvider,log)
         {
-            context.Log.LogInformation($"Processing OPC Message");
+            
         }
 
-        public async Task Ingest(EventData eventData, JObject message)
+        public async Task Ingest(MessageContext context)
         {
             try
             {
-                string twinId = ExtractTwinId(message);
+                string twinId = ExtractTwinId(context.Message);
 
                 if (twinId == null)
                     return;
 
-                await IngestOpcItem(message, twinId.ToString());
+                await IngestOpcItem(context, twinId.ToString());
             }
             catch (Exception ex)
             {
-                _context.Log.LogError(ex, $"Error Ingesting OPC Message {message.ToString()}");
+                _logger.LogError(ex, $"Error Ingesting OPC Message {context.Message.ToString()}");
             }
         }
 
@@ -53,18 +53,18 @@ namespace adt_auto_ingester.Ingestion.OPC
             return twinId?.ToString();
         }
 
-        protected override Task<string> EnsureModelExists(JObject message)
+        protected override Task<string> EnsureModelExists(MessageContext context)
         {
-            return EnsureModelExists(message, $"dtmi:com:microsoft:autoingest:opcnode", "OPC Node");
+            return EnsureModelExists(context, $"dtmi:com:microsoft:autoingest:opcnode", "OPC Node");
         }
 
-        protected override async Task<string> EnsureModelExists(JObject message, string rawModelId, string name)
+        protected override async Task<string> EnsureModelExists(MessageContext context, string rawModelId, string name)
         {
             var modelId = $"{rawModelId};1";
-            var models = await GetAllModels();
-            var modelExists = models.Any(m => m.Id.Split(";")[0] == rawModelId);
+            var models = await GetAllModels(rawModelId);
+            var model =  models.OrderByDescending(m => m.ModelVersion.Value).FirstOrDefault();
 
-            if (modelExists)
+            if (model != null)
                 return modelId;
 
             var opcNodeModel = new DigitalTwinModel
@@ -109,42 +109,42 @@ namespace adt_auto_ingester.Ingestion.OPC
             });
 
             var modelDtdl = JsonConvert.SerializeObject(opcNodeModel, Formatting.Indented);
-            _context.Log.LogInformation($"Creating Auto Model {modelId} in {_context.AdtUrl}\n: {modelDtdl}");
+            _logger.LogInformation($"Creating Auto Model {modelId} in {context.IngestionContext.AdtUrl}\n: {modelDtdl}");
 
-            var newModels = await _context.DigitalTwinsClient.CreateModelsAsync(new string[] { modelDtdl });
+            var newModels = await context.IngestionContext.DigitalTwinsClient.CreateModelsAsync(new string[] { modelDtdl });
 
             if (newModels.Value.Any())
-                _context.Log.LogInformation($"Created Auto Model {modelId} in {_context.AdtUrl}");
+                _logger.LogInformation($"Created Auto Model {modelId} in {context.IngestionContext.AdtUrl}");
 
             return modelId;
         }
 
-        private async Task IngestOpcItem(JObject message, string twinId)
+        private async Task IngestOpcItem(MessageContext context, string twinId)
         {
-            await WriteToTwin(message, twinId, await EnsureModelExists(message));
+            await WriteToTwin(context, twinId, await EnsureModelExists(context));
         }
 
-        protected override async Task WriteToTwin(JObject message, string twinId, string modelId)
+        protected override async Task WriteToTwin(MessageContext context, string twinId, string modelId)
         {
-            var twin = await GetTwin(twinId);
+            var twin = await GetTwin(context, twinId);
 
             if (twin == null)
-                await CreateOpcNodeTwin(message, modelId, twinId);
+                await CreateOpcNodeTwin(context, modelId, twinId);
             else
-                await UpdateOpcNodeTwin(message, twin, twinId, modelId);
+                await UpdateOpcNodeTwin(context, twin, twinId, modelId);
         }
 
-        private async Task UpdateOpcNodeTwin(JObject message, BasicDigitalTwin twin, string twinId, string modelId)
+        private async Task UpdateOpcNodeTwin(MessageContext context, BasicDigitalTwin twin, string twinId, string modelId)
         {
             var patch = new JsonPatchDocument();
 
             patch.AppendAdd("/$metadata/$model", modelId);
 
-            var value = message.SelectToken("Value.Value", false) ?? message.SelectToken("Value", false);
-            var timestamp = message.SelectToken("Value.SourceTimestamp") ?? message.SelectToken("SourceTimestamp", false);
-            var nodeId = message.SelectToken("NodeId", false);
-            var applicationUri = message.SelectToken("ApplicationUri", false);
-            var displayName = message.SelectToken("DisplayName");
+            var value = context.Message.SelectToken("Value.Value", false) ?? context.Message.SelectToken("Value", false);
+            var timestamp = context.Message.SelectToken("Value.SourceTimestamp") ?? context.Message.SelectToken("SourceTimestamp", false);
+            var nodeId = context.Message.SelectToken("NodeId", false);
+            var applicationUri = context.Message.SelectToken("ApplicationUri", false);
+            var displayName = context.Message.SelectToken("DisplayName");
 
             if (nodeId != null)
                 AddPropertyPatch(patch, "NodeId", nodeId.ToString());
@@ -162,10 +162,10 @@ namespace adt_auto_ingester.Ingestion.OPC
             if (applicationUri != null)
                 AddPropertyPatch(patch, "ApplicationUri", applicationUri.ToString());
 
-            await _context.DigitalTwinsClient.UpdateDigitalTwinAsync(twinId, patch, twin.ETag);
+            await context.IngestionContext.DigitalTwinsClient.UpdateDigitalTwinAsync(twinId, patch, twin.ETag);
         }
 
-        private async Task CreateOpcNodeTwin(JObject message, string modelId, string twinId)
+        private async Task CreateOpcNodeTwin(MessageContext context, string modelId, string twinId)
         {
             var twin = new BasicDigitalTwin()
             {
@@ -177,11 +177,11 @@ namespace adt_auto_ingester.Ingestion.OPC
             };
 
 
-            var value = message.SelectToken("Value.Value", false) ?? message.SelectToken("Value", false);
-            var timestamp = message.SelectToken("Value.SourceTimestamp") ?? message.SelectToken("SourceTimestamp", false);
-            var applicationUri = message.SelectToken("ApplicationUri", false);
-            var nodeId = message.SelectToken("NodeId", false);
-            var displayName = message.SelectToken("DisplayName");
+            var value = context.Message.SelectToken("Value.Value", false) ?? context.Message.SelectToken("Value", false);
+            var timestamp = context.Message.SelectToken("Value.SourceTimestamp") ?? context.Message.SelectToken("SourceTimestamp", false);
+            var applicationUri = context.Message.SelectToken("ApplicationUri", false);
+            var nodeId = context.Message.SelectToken("NodeId", false);
+            var displayName = context.Message.SelectToken("DisplayName");
 
             if (nodeId != null)
                 twin.Contents.Add("NodeId", nodeId.ToString());
@@ -198,9 +198,9 @@ namespace adt_auto_ingester.Ingestion.OPC
             if (applicationUri != null)
                 twin.Contents.Add("ApplicationUri", applicationUri.ToString());
 
-            _context.Log.LogInformation($"Updating or Creating Twin {twinId} in {_context.AdtUrl}");
+            _logger.LogInformation($"Updating or Creating Twin {twinId} in {context.IngestionContext.AdtUrl}");
 
-            await _context.DigitalTwinsClient.CreateOrReplaceDigitalTwinAsync(twinId, twin);
+            await context.IngestionContext.DigitalTwinsClient.CreateOrReplaceDigitalTwinAsync(twinId, twin);
         }
     }
 }

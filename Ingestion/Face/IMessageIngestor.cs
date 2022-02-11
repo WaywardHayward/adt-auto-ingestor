@@ -9,6 +9,6 @@ namespace adt_auto_ingester.Ingestion.Face
 {
     public interface IMessageIngestor
     {
-        Task Ingest(EventData eventData, JObject message);
+        Task Ingest(MessageContext context);
     }
 }

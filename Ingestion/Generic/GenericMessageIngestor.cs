@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using adt_auto_ingester.Ingestion.Face;
 using adt_auto_ingester.Models;
 using adt_auto_ingestor.AzureDigitalTwins;
-using Microsoft.Azure.EventHubs;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
@@ -16,79 +15,48 @@ namespace adt_auto_ingester.Ingestion.Generic
     public class GenericMessageIngestor : AbstractMessageIngestor, IMessageIngestor
     {
 
-        private string _currentTwinId;
-
-        public GenericMessageIngestor(IngestionContext context, DigitalTwinModelCache modelCache) : base(context, modelCache)
+        public GenericMessageIngestor(ILogger<GenericMessageIngestor> log, DigitalTwinModelCache modelCache, GenericMessageTwinIdProvider twinIdProvider) : base(modelCache, twinIdProvider, log)
         {
-            context.Log.LogInformation($"Processing Generic Message");
+
         }
 
-        public async Task Ingest(EventData eventData, JObject message)
+        public async Task Ingest(MessageContext context)
         {
             try
             {
-                PopulateTwinId(eventData, message);
+                var twinId = _twinIdProvider.PopulateTwinId(context);
 
-                _context.Log.LogTrace("Checking For Twin Id in Event");
+                _logger.LogTrace("Checking For Twin Id in Event");
 
-                if (string.IsNullOrWhiteSpace(_currentTwinId))
+                if (string.IsNullOrWhiteSpace(twinId))
                 {
-                    _context.Log.LogWarning($"Message {message.ToString()} has no deviceId ");
+                    _logger.LogWarning($"Message {context.Message.ToString()} has no deviceId ");
                     return;
                 }
 
-                if (message.SelectToken("Payload.SensorId", false)?.Value<string>() == "Heartbeat" || message.SelectToken("Payload.SensorId", false)?.Value<string>() == "ModelManager")
+                if (context.Message.SelectToken("Payload.SensorId", false)?.Value<string>() == "Heartbeat" || context.Message.SelectToken("Payload.SensorId", false)?.Value<string>() == "ModelManager")
                 {
-                    _context.Log.LogTrace($"Ignoring Heartbeat");
+                    _logger.LogTrace($"Ignoring Heartbeat");
                     return;
                 }
 
-                await WriteToTwin(message, _currentTwinId, await EnsureModelExists(message));
+                LogTimestampOffset(context);
+
+                await WriteToTwin(context, twinId, await EnsureModelExists(context));
             }
             catch (Exception ex)
             {
-                _context.Log.LogError(ex, $"Error Ingesting Generic Message {message.ToString()}");
+                _logger.LogError(ex, $"Error Ingesting Generic Message {context.Message.ToString()}");
             }
         }
-        private void PopulateTwinId(EventData eventData, JObject message)
+
+
+        protected override async Task<string> EnsureModelExists(MessageContext context)
         {
-            var twinId = string.Empty;
-            var deviceId = GetTwinId(message, _context.Configuration[Constants.INGESTION_ADT_TWIN_IDENTIFIERS]?.Split(";") ?? new[] { "message.DeviceId" });
-
-            if (!string.IsNullOrEmpty(deviceId))
-                _currentTwinId = deviceId;
-
-            if (string.IsNullOrEmpty(_currentTwinId))
-                _currentTwinId = eventData.SystemProperties.ContainsKey("iothub-connection-device-id") ? eventData.SystemProperties["iothub-connection-device-id"].ToString() : string.Empty;
-
-        }
-
-        private string GetTwinId(JObject message, string identifierPath)
-        {
-            _context.Log.LogInformation($"Looking For Twin Id {identifierPath} in Event {message.ToString()}");
-            var deviceId = message.SelectToken(identifierPath, false);
-            return deviceId?.Value<string>();
-        }
-
-        private string GetTwinId(JObject message, string[] identifierPaths)
-        {
-            foreach (var path in identifierPaths)
-            {
-                var deviceId = GetTwinId(message, path);
-                if (!string.IsNullOrWhiteSpace(deviceId))
-                {
-                    _context.Log.LogTrace($"Found Twin Id {deviceId} in Message via Property Path {path}");
-                    return deviceId;
-                }
-            }
-            return null;
-        }
-
-        protected override async Task<string> EnsureModelExists(JObject message)
-        {
-            var modelId = GetModelId(message, _context.Configuration[Constants.INGESTION_ADT_MODEL_IDENTIFIERS]?.Split(";")) ?? $"{_context.Configuration[Constants.INGESTION_EVENT_HUB_NAME].Replace("-", string.Empty).ToLower()}:{_currentTwinId.Replace("-", string.Empty).ToLower()}";
+            var twinId = _twinIdProvider.PopulateTwinId(context);
+            var modelId = GetModelId(context.Message, context.IngestionContext.Configuration[Constants.INGESTION_ADT_MODEL_IDENTIFIERS]?.Split(";")) ?? $"{context.IngestionContext.Configuration[Constants.INGESTION_EVENT_HUB_NAME].Replace("-", string.Empty).ToLower()}:{twinId.Replace("-", string.Empty).ToLower()}";
             var rawModelId = $"dtmi:com:microsoft:autoingest:{modelId}";
-            return await EnsureModelExists(message, rawModelId, modelId ?? _currentTwinId.Split(":").LastOrDefault());
+            return await EnsureModelExists(context, rawModelId, modelId ?? twinId.Split(":").LastOrDefault());
         }
 
         private string GetModelId(JObject message, string[] identifierPaths)
@@ -102,11 +70,40 @@ namespace adt_auto_ingester.Ingestion.Generic
 
                 if (!string.IsNullOrWhiteSpace(modelId))
                 {
-                    _context.Log.LogInformation($"Found Model Id {modelId} in Message via Property Path {path}");
+                    _logger.LogInformation($"Found Model Id {modelId} in Message via Property Path {path}");
                     return modelId;
                 }
             }
             return null;
+        }
+
+        private void LogTimestampOffset(MessageContext context)
+        {
+            var timestampIdentifiers = context.IngestionContext.Configuration[Constants.INGESTION_ADT_TIMESTAMP_IDENTIFIERS]?.Split(";");
+
+            if (timestampIdentifiers == null || timestampIdentifiers.Length == 0)
+            {
+                _logger.LogInformation($"No Timestamp Identifiers Found in Configuration");
+                return;
+            }
+
+            foreach (var timestampIdentifier in timestampIdentifiers)
+            {
+                var timestamp = context.Message.SelectToken(timestampIdentifier, false)?.Value<DateTime>();
+
+                if (timestamp == null)
+                {
+                    _logger.LogInformation($"No Timestamp Found in Message via Property Path {timestampIdentifier}");
+                    continue;
+                }
+
+                _logger.LogInformation($"Timestamp {timestamp} Offset {DateTime.UtcNow - timestamp}");
+
+
+                break;
+            }
+
+
         }
     }
 }
