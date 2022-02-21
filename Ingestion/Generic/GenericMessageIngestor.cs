@@ -4,6 +4,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using adt_auto_ingester.Helpers;
 using adt_auto_ingester.Ingestion.Face;
 using adt_auto_ingester.Models;
 using adt_auto_ingestor.AzureDigitalTwins;
@@ -104,6 +105,33 @@ namespace adt_auto_ingester.Ingestion.Generic
             }
 
 
+        }
+
+        protected override string GetSourceTimestamp(MessageContext context)        
+        {
+            var defaultValue = DateTime.UtcNow.ToString("o");
+            var timestampIdentifiers = context.IngestionContext.Configuration[Constants.INGESTION_ADT_TIMESTAMP_IDENTIFIERS]?.Split(";");
+
+            if (timestampIdentifiers == null || timestampIdentifiers.Length == 0)
+            {
+                _logger.LogInformation($"\t No Timestamp Identifiers Found in Configuration");
+                return defaultValue;
+            }
+
+            foreach (var timestampIdentifier in timestampIdentifiers)
+            {
+                var timestamp = context.Message.SelectDateTimeTokenString(timestampIdentifier);
+
+                if (timestamp == null)
+                {
+                    _logger.LogInformation($"\t No Timestamp Found in Message via Property Path {timestampIdentifier}");
+                    continue;
+                }
+                
+                return timestamp;
+            }
+            
+            return defaultValue;
         }
     }
 }

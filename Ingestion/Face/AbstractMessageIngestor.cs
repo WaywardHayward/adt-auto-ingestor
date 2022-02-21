@@ -138,16 +138,22 @@ namespace adt_auto_ingester.Ingestion.Face
 
             patch.AppendReplace("/$metadata/$model", modelId);
 
+            var sourceTimestamp = GetSourceTimestamp(context); 
+
             foreach (var property in context.MessageProperties.Value.Keys)
             {
                 if (twin.Contents.ContainsKey(property))
                     patch.AppendReplace("/" + property, ((JValue)context.Message?.SelectToken(property)).ToString(CultureInfo.InvariantCulture));
                 else
                     patch.AppendAdd("/" + property, ((JValue)context.Message?.SelectToken(property))?.ToString(CultureInfo.InvariantCulture));
+
+                patch.AppendReplace($"/$metadata/{property}/sourceTime", sourceTimestamp);
             }
 
             await context.IngestionContext.DigitalTwinsClient.UpdateDigitalTwinAsync(twinId, patch, twin.ETag);
         }
+
+        protected abstract string GetSourceTimestamp(MessageContext context);
 
         protected async Task CreateNewTwin(MessageContext context, string twinId, string modelId)
         {
@@ -160,8 +166,11 @@ namespace adt_auto_ingester.Ingestion.Face
                 }
             };
 
-            foreach (var property in context.MessageProperties.Value.Keys)
-                newTwin.Contents.Add(property, ((JValue)context.Message.SelectToken(property)).ToString(CultureInfo.InvariantCulture));
+            var sourceTimestamp = GetSourceTimestamp(context); 
+
+            foreach (var property in context.MessageProperties.Value.Keys){
+                newTwin.Contents.Add(property, ((JValue)context.Message.SelectToken(property)).ToString(CultureInfo.InvariantCulture));           
+            }
 
             _logger.LogTrace($"Updating or Creating Twin {twinId} in {context.IngestionContext.AdtUrl}");
 
@@ -182,9 +191,10 @@ namespace adt_auto_ingester.Ingestion.Face
             return null;
         }
 
-        protected void AddPropertyPatch(JsonPatchDocument patch, string propertyName, string propertyValue)
+        protected void AddPropertyPatch(JsonPatchDocument patch, string propertyName, string propertyValue, MessageContext context)
         {
             patch.AppendAdd("/" + propertyName, propertyValue);
+            patch.AppendAdd("/$metadata/" + propertyName + "/sourceTime",GetSourceTimestamp(context));
         }
     }
 }

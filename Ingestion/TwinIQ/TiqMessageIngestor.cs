@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using adt_auto_ingester.AzureDigitalTwins;
+using adt_auto_ingester.Helpers;
 using adt_auto_ingester.Ingestion.Face;
 using adt_auto_ingestor.AzureDigitalTwins;
 using Azure;
@@ -50,6 +51,11 @@ namespace adt_auto_ingester.Ingestion.TwinIQ
                 await CreateTwinIQSensorTwin(context, modelId, twinId);
             else
                 await UpdateTwinIQSensorTwin(context, twin, twinId, modelId);
+        }
+
+        protected override string GetSourceTimestamp(MessageContext context)
+        {
+            return context.Message.SelectDateTimeTokenString("Payload.Timestamp");
         }
 
         private async Task UpdateTwinIQSensorTwin(MessageContext context, BasicDigitalTwin twin, string twinId, string modelId)

@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using adt_auto_ingester.AzureDigitalTwins;
+using adt_auto_ingester.Helpers;
 using adt_auto_ingester.Ingestion.Face;
 using adt_auto_ingestor.AzureDigitalTwins;
 using Azure;
@@ -56,6 +57,11 @@ namespace adt_auto_ingester.Ingestion.OPC
         protected override Task<string> EnsureModelExists(MessageContext context)
         {
             return EnsureModelExists(context, $"dtmi:com:microsoft:autoingest:opcnode", "OPC Node");
+        }
+
+        protected override string GetSourceTimestamp(MessageContext context)
+        {
+            return context.Message.SelectDateTimeTokenString("SourceTimestamp") ?? context.Message.SelectDateTimeTokenString("Timestamp") ?? DateTime.UtcNow.ToString();
         }
 
         protected override async Task<string> EnsureModelExists(MessageContext context, string rawModelId, string name)
@@ -147,20 +153,20 @@ namespace adt_auto_ingester.Ingestion.OPC
             var displayName = context.Message.SelectToken("DisplayName");
 
             if (nodeId != null)
-                AddPropertyPatch(patch, "NodeId", nodeId.ToString());
+                AddPropertyPatch(patch, "NodeId", nodeId.ToString(), context);
 
             if (value != null)
-                AddPropertyPatch(patch, "Value", value.ToString());
+                AddPropertyPatch(patch, "Value", value.ToString(), context);
 
             if (displayName != null)
-                AddPropertyPatch(patch, "DisplayName", displayName.ToString());
+                AddPropertyPatch(patch, "DisplayName", displayName.ToString(), context);
 
             if (timestamp != null)
-                AddPropertyPatch(patch, "SourceTimestamp", timestamp.ToString());
+                AddPropertyPatch(patch, "SourceTimestamp", timestamp.ToString(), context);
 
 
             if (applicationUri != null)
-                AddPropertyPatch(patch, "ApplicationUri", applicationUri.ToString());
+                AddPropertyPatch(patch, "ApplicationUri", applicationUri.ToString(), context);
 
             await context.IngestionContext.DigitalTwinsClient.UpdateDigitalTwinAsync(twinId, patch, twin.ETag);
         }
