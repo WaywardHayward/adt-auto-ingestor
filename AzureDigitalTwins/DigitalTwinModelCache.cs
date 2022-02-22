@@ -31,7 +31,7 @@ namespace adt_auto_ingestor.AzureDigitalTwins
         public async Task<List<DigitalTwinModel>> GetModelsForId(string modelId){
             if (_nextModelFetch > DateTime.UtcNow)
             {
-                _logger.LogTrace("Using model Cache");
+                _logger.LogDebug("Using model Cache");
                 return _modelCache.ContainsKey(modelId) ? _modelCache[modelId] : new List<DigitalTwinModel>();
             }
             await RebuildCache();
@@ -42,7 +42,7 @@ namespace adt_auto_ingestor.AzureDigitalTwins
         {
             if (_nextModelFetch > DateTime.UtcNow)
             {
-                _logger.LogTrace("Using model Cache");
+                _logger.LogDebug("Using model Cache");
                 return _modelCache.Values.SelectMany(s => s).ToList();
             }
             _logger.LogInformation("All Keys {0}", string.Join(",", _modelCache.Keys));

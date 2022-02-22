@@ -11,16 +11,18 @@ namespace adt_auto_ingester.Ingestion.Generic
     {
         private readonly ILogger<GenericMessageTwinIdProvider> _logger;
         private readonly IConfiguration _configuration;
+        private readonly string[] _twinIdentifiers;
 
         public GenericMessageTwinIdProvider(IConfiguration configuration, ILogger<GenericMessageTwinIdProvider> log)
         {
             _logger = log;
-            _configuration = configuration;        
+            _configuration = configuration;                 
+            _twinIdentifiers =_configuration[Constants.INGESTION_ADT_TWIN_IDENTIFIERS]?.Split(";");      
         }
 
         public string PopulateTwinId(MessageContext context)
         {
-            var deviceId = GetTwinId(context.Message, _configuration[Constants.INGESTION_ADT_TWIN_IDENTIFIERS]?.Split(";") ?? new[] { "message.DeviceId" });
+            var deviceId = GetTwinId(context.Message, _twinIdentifiers ?? new[] { "message.DeviceId" });
             var currentTwinId = string.Empty;
 
             if (!string.IsNullOrEmpty(deviceId))
@@ -39,7 +41,7 @@ namespace adt_auto_ingester.Ingestion.Generic
                 var deviceId = GetTwinId(message, path);
                 if (!string.IsNullOrWhiteSpace(deviceId))
                 {
-                    _logger.LogTrace($"Found Twin Id {deviceId} in Message via Property Path {path}");
+                    _logger.LogDebug($"Found Twin Id {deviceId} in Message via Property Path {path}");
                     return deviceId;
                 }
             }

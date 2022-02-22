@@ -11,6 +11,7 @@ using adt_auto_ingestor.AzureDigitalTwins;
 using Azure;
 using Azure.DigitalTwins.Core;
 using Microsoft.Azure.EventHubs;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -20,8 +21,9 @@ namespace adt_auto_ingester.Ingestion.TwinIQ
     public class TwinIqMessageIngestor: AbstractMessageIngestor, IMessageIngestor
     {
 
-        public TwinIqMessageIngestor(ILogger<TwinIqMessageIngestor> log, DigitalTwinModelCache modelCache, TiqTwinIdProvider twinIdProvider) : base(modelCache, twinIdProvider, log)
-        {        
+        public TwinIqMessageIngestor(ILogger<TwinIqMessageIngestor> log, DigitalTwinModelCache modelCache, TiqTwinIdProvider twinIdProvider, IConfiguration configuration, DigitalTwinCache twinCache) : base(modelCache, twinIdProvider, log, configuration, twinCache)
+        {
+
         }
 
         public async Task Ingest(MessageContext context)

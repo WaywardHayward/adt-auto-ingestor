@@ -11,6 +11,7 @@ using adt_auto_ingestor.AzureDigitalTwins;
 using Azure;
 using Azure.DigitalTwins.Core;
 using Microsoft.Azure.EventHubs;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -19,9 +20,9 @@ namespace adt_auto_ingester.Ingestion.OPC
 {
     public class OpcMessageIngestor : AbstractMessageIngestor, IMessageIngestor
     {
-        public OpcMessageIngestor(ILogger<OpcMessageIngestor> log, DigitalTwinModelCache modelCache, OpcMessageTwinIdProvider idProvider) : base(modelCache, idProvider,log)
+        public OpcMessageIngestor(ILogger<OpcMessageIngestor> log, DigitalTwinModelCache modelCache, OpcMessageTwinIdProvider idProvider, IConfiguration configuration, DigitalTwinCache twinCache) : base(modelCache, idProvider,log, configuration, twinCache)
         {
-            
+
         }
 
         public async Task Ingest(MessageContext context)

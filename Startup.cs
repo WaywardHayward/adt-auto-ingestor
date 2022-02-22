@@ -10,6 +10,8 @@ using adt_auto_ingestor.AzureDigitalTwins;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
 
 [assembly: FunctionsStartup(typeof(Startup))]
 namespace adt_auto_ingester
@@ -18,14 +20,15 @@ namespace adt_auto_ingester
     {
         public override void ConfigureAppConfiguration(IFunctionsConfigurationBuilder builder)
         {
-            builder.ConfigurationBuilder.AddJsonFile("local.settings.json", true);
+            builder.ConfigurationBuilder.AddJsonFile("local.settings.json", true, true);
             builder.ConfigurationBuilder.AddEnvironmentVariables();
         }
 
         public override void Configure(IFunctionsHostBuilder builder)
-        {
-            builder.Services.AddLogging();
+        {            
+            builder.Services.AddLogging(s => s.AddConsole());
             builder.Services.AddSingleton<DigitalTwinsClientProvider>();
+            builder.Services.AddSingleton<DigitalTwinCache>();
             builder.Services.AddTransient<IngestionContext>();
             builder.Services.AddSingleton<GenericMessageTwinIdProvider>();
             builder.Services.AddSingleton<TiqTwinIdProvider>();
