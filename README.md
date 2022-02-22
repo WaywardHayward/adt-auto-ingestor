@@ -46,6 +46,7 @@ The following settings are required on top of the standard Azure Function app se
 | INGESTION_TWIN_URL | string | The fully qualified Azure Digital Twins instance url https://\<your-instance-name\>.api.\<your-instance-location-shortcode\>.digitaltwins.azure.net |
 | INGESTION_ADT_TWIN_IDENTIFIERS | string | An Optional Property, comprising of a semi-colon separated list of Json Paths to extract the Twin Identifier from the Generic Messages. if not supplied the Path message.DeviceId or the iot-device-identifier from the message properties are used. |
 | INGESTION_MODEL_IDENTIFIERS | string | An Optional Property, comprising of a semi-colon separated list of Json Paths to extract the Model Identifier from the Generic Messages. if not supplied the Path message.ModelId or the iot-model-identifier from the message properties are used. |
+| INGESTION_TIMESTAMP_IDENTIFIERS | string | An Optional Property, comprising of a semi-colon separated list of Json Paths to extract the Timestamp from the Generic Messages. if not supplied the The current time in UTC is used  |
 | INGESTION_TIQ_ENABLED | boolean | An Optional Property, defines if the function app should auto provision Twin IQ Sensors - when not supplied is treated as false |
 | INGESTION_OPC_ENABLED | boolean | An Optional Property, defines if the function app should auto ingest OPC Sensors - when not supplied is treated as false |
 | INGESTION_GENERIC_ENABLED | boolean | An Optional Property, defines if the function app should auto ingest any messages - when not supplied is treated as false |
