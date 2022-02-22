@@ -169,7 +169,11 @@ namespace adt_auto_ingester.Ingestion.Face
             var sourceTimestamp = GetSourceTimestamp(context); 
 
             foreach (var property in context.MessageProperties.Value.Keys){
-                newTwin.Contents.Add(property, ((JValue)context.Message.SelectToken(property)).ToString(CultureInfo.InvariantCulture));           
+                newTwin.Contents.Add(property, ((JValue)context.Message.SelectToken(property)).ToString(CultureInfo.InvariantCulture));      
+                newTwin.Metadata.PropertyMetadata.Add(property, new DigitalTwinPropertyMetadata
+                {
+                    SourceTime = new DateTimeOffset(DateTime.Parse(sourceTimestamp), TimeSpan.Zero)
+                });     
             }
 
             _logger.LogTrace($"Updating or Creating Twin {twinId} in {context.IngestionContext.AdtUrl}");

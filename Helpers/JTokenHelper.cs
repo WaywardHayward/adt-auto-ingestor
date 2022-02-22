@@ -12,7 +12,7 @@ namespace adt_auto_ingester.Helpers
         {
             var value = token.SelectToken(path, false)?.Value<DateTime>();
             if(value == null) return null;
-            return value?.ToString("o");            
+            return value?.ToString("yyyy-MM-ddTHH:mm:ssZ");            
         }
 
     }
