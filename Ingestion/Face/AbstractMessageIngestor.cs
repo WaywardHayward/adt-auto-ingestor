@@ -156,11 +156,7 @@ namespace adt_auto_ingester.Ingestion.Face
 
             foreach (var property in context.MessageProperties.Value.Keys)
             {
-                if (twin.Contents.ContainsKey(property))
-                    patch.AppendReplace("/" + property, ((JValue)context.Message?.SelectToken(property)).ToString(CultureInfo.InvariantCulture));
-                else
-                    patch.AppendAdd("/" + property, ((JValue)context.Message?.SelectToken(property))?.ToString(CultureInfo.InvariantCulture));
-
+                patch.AppendReplace("/" + property, ((JValue)context.Message?.SelectToken(property)).ToString(CultureInfo.InvariantCulture));               
                 patch.AppendReplace($"/$metadata/{property}/sourceTime", sourceTimestamp);
             }
 

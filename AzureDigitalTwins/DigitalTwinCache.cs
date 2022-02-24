@@ -99,8 +99,6 @@ namespace adt_auto_ingestor.AzureDigitalTwins
 
             _logger.LogInformation($"Reloaded {twinsToLoad.Count} Digital Twins");
 
-
-
         }
 
     }
