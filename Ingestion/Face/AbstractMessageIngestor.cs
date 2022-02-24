@@ -91,6 +91,7 @@ namespace adt_auto_ingester.Ingestion.Face
                 }
                 else
                 {
+                    modelId = model.Id;
                     _logger.LogDebug("No Properties missing");
                 }
 
