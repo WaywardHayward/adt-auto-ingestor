@@ -59,7 +59,7 @@
 			"type": "func",
 			"dependsOn": "build (functions)",
 			"options": {
-				"cwd": "${workspaceFolder}/bin/Debug/netcoreapp3.1"
+				"cwd": "${workspaceFolder}/src/bin/Debug/netcoreapp3.1"
 			},
 			"command": "host start",
 			"isBackground": true,
@@ -71,7 +71,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/adt-auto-ingester.csproj",
+                "${workspaceFolder}/src/adt-auto-ingester.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -83,7 +83,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/adt-auto-ingester.csproj",
+                "${workspaceFolder}/src/adt-auto-ingester.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -96,7 +96,7 @@
             "args": [
                 "watch",
                 "run",
-                "${workspaceFolder}/adt-auto-ingester.csproj",
+                "${workspaceFolder}/src/adt-auto-ingester.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
