@@ -42,8 +42,6 @@ namespace adt_auto_ingester.Ingestion.Generic
                     return;
                 }
 
-                LogTimestampOffset(context);
-
                 await WriteToTwin(context, twinId, await EnsureModelExists(context));
             }
             catch (Exception ex)
@@ -78,34 +76,6 @@ namespace adt_auto_ingester.Ingestion.Generic
                 }
             }
             return null;
-        }
-
-        private void LogTimestampOffset(MessageContext context)
-        {
-            if (_timestampIdentifiers == null || _timestampIdentifiers.Length == 0)
-            {
-                _logger.LogInformation($"No Timestamp Identifiers Found in Configuration");
-                return;
-            }
-
-            for (int i = 0; i < _timestampIdentifiers.Length; i++)
-            {
-                string timestampIdentifier = _timestampIdentifiers[i];
-                var timestamp = context.Message.SelectToken(timestampIdentifier, false)?.Value<DateTime>();
-
-                if (timestamp == null)
-                {
-                    _logger.LogInformation($"No Timestamp Found in Message via Property Path {timestampIdentifier}");
-                    continue;
-                }
-
-                _logger.LogInformation($"Timestamp {timestamp} Offset {DateTime.UtcNow - timestamp}");
-
-
-                break;
-            }
-
-
         }
 
         protected override string GetSourceTimestamp(MessageContext context)        
