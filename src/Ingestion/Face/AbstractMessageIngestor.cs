@@ -15,6 +15,7 @@ using adt_auto_ingestor.AzureDigitalTwins;
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using adt_auto_ingester.Models;
+using src.AzureDigitalTwins.Builder;
 
 namespace adt_auto_ingester.Ingestion.Face
 {
@@ -28,6 +29,7 @@ namespace adt_auto_ingester.Ingestion.Face
         protected readonly string[] _modelIdentifiers;
         protected readonly string[] _twinIdentifiers;
         private readonly DigitalTwinCache _twinCache;
+        private readonly TwinPatchBuilder _patchBuilder;
 
         protected AbstractMessageIngestor(DigitalTwinModelCache modelCache, ITwinIdProvider twinIdProvider, ILogger log, IConfiguration configuration, DigitalTwinCache twinCache)
         {
@@ -39,6 +41,7 @@ namespace adt_auto_ingester.Ingestion.Face
             _modelIdentifiers = _configuration[Constants.INGESTION_ADT_MODEL_IDENTIFIERS]?.Split(";");
             _twinIdentifiers =_configuration[Constants.INGESTION_ADT_TWIN_IDENTIFIERS]?.Split(";");            
             _twinCache = twinCache;
+            _patchBuilder = new TwinPatchBuilder();
         }
 
         protected Task<List<DigitalTwinModel>> GetAllModels(string modelId) => _modelCache.GetModelsForId(modelId);
@@ -149,23 +152,8 @@ namespace adt_auto_ingester.Ingestion.Face
 
         protected async Task UpdateExistingTwin(MessageContext context, string twinId, string modelId, BasicDigitalTwin twin)
         {
-            var patch = new JsonPatchDocument();
-
-            patch.AppendReplace("/$metadata/$model", modelId);
-
-            var sourceTimestamp = GetSourceTimestamp(context); 
-
-            foreach (var property in context.MessageProperties.Value.Keys)
-            {
-                if(twin.Contents.ContainsKey(property))
-                    patch.AppendReplace("/" + property, ((JValue)context.Message?.SelectToken(property)).ToString(CultureInfo.InvariantCulture));               
-                else
-                    patch.AppendReplace("/" + property, ((JValue)context.Message?.SelectToken(property)).ToString(CultureInfo.InvariantCulture));               
-                patch.AppendReplace($"/$metadata/{property}/sourceTime", sourceTimestamp);
-            }
-
+            var patch = _patchBuilder.Build(context, modelId, twin, GetSourceTimestamp(context));
             var updatedTwin = await context.IngestionContext.DigitalTwinsClient.UpdateDigitalTwinAsync(twinId, patch);
-
         }
 
         protected abstract string GetSourceTimestamp(MessageContext context);

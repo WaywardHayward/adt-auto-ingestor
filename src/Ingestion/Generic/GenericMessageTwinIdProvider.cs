@@ -1,3 +1,4 @@
+using System.Linq;
 using adt_auto_ingester.Ingestion.Face;
 using adt_auto_ingester.Models;
 using Microsoft.Azure.EventHubs;
@@ -18,7 +19,8 @@ namespace adt_auto_ingester.Ingestion.Generic
         {
             _logger = log;
             _configuration = configuration;                 
-            _twinIdentifiers =_configuration[Constants.INGESTION_ADT_TWIN_IDENTIFIERS]?.Split(";");      
+            _twinIdentifiers =_configuration[Constants.INGESTION_ADT_TWIN_IDENTIFIERS]?.Split(";")?.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();      
+            
         }
 
         public string PopulateTwinId(MessageContext context)
