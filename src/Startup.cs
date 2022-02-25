@@ -2,6 +2,7 @@
 using System;
 using adt_auto_ingester;
 using adt_auto_ingester.AzureDigitalTwins;
+using adt_auto_ingester.AzureDigitalTwins.Face;
 using adt_auto_ingester.Ingestion;
 using adt_auto_ingester.Ingestion.Generic;
 using adt_auto_ingester.Ingestion.OPC;
@@ -27,7 +28,7 @@ namespace adt_auto_ingester
         public override void Configure(IFunctionsHostBuilder builder)
         {            
             builder.Services.AddLogging(s => s.AddConsole());
-            builder.Services.AddSingleton<DigitalTwinsClientProvider>();
+            builder.Services.AddSingleton<IDigitalTwinsClientProvider, DigitalTwinsClientProvider>();
             builder.Services.AddSingleton<DigitalTwinCache>();
             builder.Services.AddTransient<IngestionContext>();
             builder.Services.AddSingleton<GenericMessageTwinIdProvider>();
