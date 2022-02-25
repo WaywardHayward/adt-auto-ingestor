@@ -59,8 +59,9 @@ namespace adt_auto_ingestor.AzureDigitalTwins
             {
                 _modelCache.Clear();
 
-                foreach (var model in models)
+                for (int i = 0; i < models.Count; i++)
                 {
+                    DigitalTwinModel model = models[i];
                     if (!_modelCache.ContainsKey(model.ModelId.Value))
                         _modelCache.Add(model.ModelId.Value, new List<DigitalTwinModel>() { model });
                     else

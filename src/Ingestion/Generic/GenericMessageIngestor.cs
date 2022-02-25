@@ -66,8 +66,9 @@ namespace adt_auto_ingester.Ingestion.Generic
             if (identifierPaths == null)
                 return null;
 
-            foreach (var path in identifierPaths)
+            for (int i = 0; i < identifierPaths.Length; i++)
             {
+                string path = identifierPaths[i];
                 var modelId = message.SelectToken(path, false)?.Value<string>();
 
                 if (!string.IsNullOrWhiteSpace(modelId))

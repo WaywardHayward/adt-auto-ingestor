@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using adt_auto_ingester.Ingestion.Face;
 using adt_auto_ingester.Models;
@@ -39,22 +40,21 @@ namespace adt_auto_ingester.Ingestion.Generic
 
         private string GetTwinId(JObject message, string[] identifierPaths)
         {
-            foreach (var path in identifierPaths)
+            for(var index = 0; index < identifierPaths.Length; index++)
             {
-                var deviceId = GetTwinId(message, path);
-                if (!string.IsNullOrWhiteSpace(deviceId))
-                {
-                    _logger.LogDebug($"Found Twin Id {deviceId} in Message via Property Path {path}");
-                    return deviceId;
-                }
+                var identifierPath = identifierPaths[index];
+                var identifier = GetTwinId(message, identifierPath);
+                if (identifier != null)
+                    return identifier.ToString();
             }
+           
             return null;
         }
 
         private string GetTwinId(JObject message, string identifierPath)
         {
-            _logger.LogInformation($"Looking For Twin Id {identifierPath} in Event {message.ToString()}");            
-            var deviceId = message.SelectToken(identifierPath, false);
+            _logger.LogInformation($"Looking For Twin Id {identifierPath.ToString()} in Event {message.ToString()}");            
+            var deviceId = message.SelectToken(identifierPath.ToString(), false);
             return deviceId?.Value<string>();
         }
 

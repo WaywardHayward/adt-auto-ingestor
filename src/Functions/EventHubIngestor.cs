@@ -36,34 +36,18 @@ namespace Microsoft.Adt.AutoIngestor
 
             log.LogInformation($"Messages Recieved {events.Length}");
 
-            foreach (EventData eventData in events)
+            for (int i = 0; i < events.Length; i++)
             {
+                EventData eventData = events[i];
                 try
                 {
                     _context.SetIngestionMessage(eventData);
                     var messageBody = Encoding.UTF8.GetString(eventData.Body.Array, eventData.Body.Offset, eventData.Body.Count);
-                                       
-                    JArray messages = new JArray();
-                    
-                    if (messageBody.StartsWith("["))
-                        messages = JArray.Parse(messageBody);
-                    else
-                        messages.Add(JObject.Parse(messageBody));
+                    var messages = GetMessageArray(messageBody);
 
-                    foreach (var message in messages)
+                    for (int messageIndex = 0; messageIndex < messages.Count; messageIndex++)
                     {
-                        var item = message as JObject;
-                        var messageContext = MessageContext.FromIngestionContext(_context, item);
-                        var ingestor = _ingestorFactory.Build(messageContext);
-
-                        if(ingestor != null)
-                        {
-                            await ingestor?.Ingest(messageContext);
-                        }
-                        else
-                        {
-                            log.LogWarning("No ingestor for message - ignoring...");
-                        }
+                        await ProcessMessage(log, messages, messageIndex);
                     }
 
 
@@ -82,6 +66,34 @@ namespace Microsoft.Adt.AutoIngestor
             if (exceptions.Count == 1)
                 throw exceptions.Single();
 
+        }
+
+        private static JArray GetMessageArray(string messageBody)
+        {
+            JArray messages = new JArray();
+
+            if (messageBody.StartsWith("["))
+                messages = JArray.Parse(messageBody);
+            else
+                messages.Add(JObject.Parse(messageBody));
+            return messages;
+        }
+
+        private async Task ProcessMessage(ILogger log, JArray messages, int i1)
+        {
+            JToken message = messages[i1];
+            var item = message as JObject;
+            var messageContext = MessageContext.FromIngestionContext(_context, item);
+            var ingestor = _ingestorFactory.Build(messageContext);
+
+            if (ingestor != null)
+            {
+                await ingestor?.Ingest(messageContext);
+            }
+            else
+            {
+                log.LogWarning("No ingestor for message - ignoring...");
+            }
         }
     }
 }
