@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+using adt_auto_ingester.AzureDigitalTwins.Face;
 using Newtonsoft.Json;
 
 namespace adt_auto_ingester.AzureDigitalTwins

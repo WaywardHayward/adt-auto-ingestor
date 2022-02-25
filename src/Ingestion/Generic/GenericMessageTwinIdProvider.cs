@@ -28,7 +28,7 @@ namespace adt_auto_ingester.Ingestion.Generic
             if (!string.IsNullOrEmpty(deviceId))
                 currentTwinId = deviceId;
 
-            if (string.IsNullOrEmpty(currentTwinId))
+            if (string.IsNullOrEmpty(currentTwinId) && context.IngestionContext.EventData?.SystemProperties != null)
                 currentTwinId = context.IngestionContext.EventData.SystemProperties.ContainsKey("iothub-connection-device-id") ? context.IngestionContext.EventData.SystemProperties["iothub-connection-device-id"].ToString() : string.Empty;
 
             return currentTwinId;
@@ -50,7 +50,7 @@ namespace adt_auto_ingester.Ingestion.Generic
 
         private string GetTwinId(JObject message, string identifierPath)
         {
-            _logger.LogInformation($"Looking For Twin Id {identifierPath} in Event {message.ToString()}");
+            _logger.LogInformation($"Looking For Twin Id {identifierPath} in Event {message.ToString()}");            
             var deviceId = message.SelectToken(identifierPath, false);
             return deviceId?.Value<string>();
         }

@@ -22,7 +22,7 @@ namespace adt_auto_ingester.Ingestion
 
         private MessageContext(){}
 
-        internal static MessageContext FromIngestionContext(IngestionContext context, JObject item)
+        public static MessageContext FromIngestionContext(IngestionContext context, JObject item)
         {
             var mContext = new MessageContext() { IngestionContext = context };
             mContext.SetMessage(item);

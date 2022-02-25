@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using adt_auto_ingester.AzureDigitalTwins;
+using adt_auto_ingester.AzureDigitalTwins.Face;
 using adt_auto_ingester.Models;
 using Azure.DigitalTwins.Core;
 using Microsoft.Azure.EventHubs;
@@ -23,7 +24,7 @@ namespace adt_auto_ingester.Ingestion
 
         public EventData EventData {get; private set;}
 
-        public IngestionContext(ILogger<IngestionContext> log, IConfiguration configuration, DigitalTwinsClientProvider clientProvider){
+        public IngestionContext(ILogger<IngestionContext> log, IConfiguration configuration, IDigitalTwinsClientProvider clientProvider){
             DigitalTwinsClient = clientProvider.GetClient();
             Configuration = configuration;
             AdtUrl = Configuration[Constants.ADT_URL_SETTING];

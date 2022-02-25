@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-namespace adt_auto_ingester.AzureDigitalTwins
+namespace adt_auto_ingester.AzureDigitalTwins.Face
 {
     public interface IDigitalTwinModelContent
     {

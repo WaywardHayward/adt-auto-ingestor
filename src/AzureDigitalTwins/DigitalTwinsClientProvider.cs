@@ -1,11 +1,13 @@
 using System;
+using adt_auto_ingester.AzureDigitalTwins.Face;
 using Azure.DigitalTwins.Core;
 using Azure.Identity;
 using Microsoft.Extensions.Configuration;
 
 namespace adt_auto_ingester.AzureDigitalTwins
 {
-    public class DigitalTwinsClientProvider
+
+    public class DigitalTwinsClientProvider : IDigitalTwinsClientProvider
     {
         private readonly IConfiguration _config;
 
