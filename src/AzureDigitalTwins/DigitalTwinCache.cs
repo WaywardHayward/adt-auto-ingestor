@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using adt_auto_ingester.AzureDigitalTwins;
+using adt_auto_ingester.AzureDigitalTwins.Face;
 using Azure.DigitalTwins.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -17,12 +18,12 @@ namespace adt_auto_ingestor.AzureDigitalTwins
 
         private readonly ILogger<DigitalTwinCache> _logger;
         private readonly IConfiguration _configuration;
-        private readonly DigitalTwinsClientProvider _digitalTwinsClientProvider;
+        private readonly IDigitalTwinsClientProvider _digitalTwinsClientProvider;
         private readonly DigitalTwinsClient _client;
         private readonly Timer _cacheTimer;
         private readonly ConcurrentDictionary<string, BasicDigitalTwin> _digitalTwins = new ConcurrentDictionary<string, BasicDigitalTwin>();
 
-        public DigitalTwinCache(ILogger<DigitalTwinCache> logger, IConfiguration configuration, DigitalTwinsClientProvider digitalTwinsClientProvider)
+        public DigitalTwinCache(ILogger<DigitalTwinCache> logger, IConfiguration configuration, IDigitalTwinsClientProvider digitalTwinsClientProvider)
         {
             _logger = logger;
             _configuration = configuration;

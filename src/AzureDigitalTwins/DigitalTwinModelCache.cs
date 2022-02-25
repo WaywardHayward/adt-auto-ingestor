@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using adt_auto_ingester.AzureDigitalTwins;
+using adt_auto_ingester.AzureDigitalTwins.Face;
 using Azure.DigitalTwins.Core;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -14,10 +15,10 @@ namespace adt_auto_ingestor.AzureDigitalTwins
         private Dictionary<string, List<DigitalTwinModel>> _modelCache = new Dictionary<string, List<DigitalTwinModel>>();
 
         private DateTime _nextModelFetch = DateTime.MinValue;
-        private readonly DigitalTwinsClientProvider _digitalTwinClientProvider;
+        private readonly IDigitalTwinsClientProvider _digitalTwinClientProvider;
         private readonly ILogger<DigitalTwinModelCache> _logger;
 
-        public DigitalTwinModelCache(ILogger<DigitalTwinModelCache> logger, DigitalTwinsClientProvider clientProvider)
+        public DigitalTwinModelCache(ILogger<DigitalTwinModelCache> logger, IDigitalTwinsClientProvider clientProvider)
         {
             _digitalTwinClientProvider = clientProvider;
             _logger = logger;
