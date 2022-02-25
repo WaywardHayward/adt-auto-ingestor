@@ -13,10 +13,12 @@ namespace adt_auto_ingester_tests.DigitalTwins.Builder
     public class TwinPatchBuilderTests : BaseTest
     {
 
-
         [Theory]
 
         [InlineData("{\"key\":\"something\", \"number\":-12.1, \"data\":\"2022-02-22T22:22:22.222Z\"}", "modelId", true)]
+        [InlineData("{\"key\":\"something\", \"number\":1111112.1, \"data\":\"2022-02-22T22:22:22.222Z\", \"array\":[{\"property\":\"someValue\"}, {\"property\":\"someOtherValue\"}]}", "modelId", true)]
+        [InlineData("{\"key\":\"something\", \"number\":-12.1, \"data\":\"2022-02-22T22:22:22.222Z\", \"array\":[{\"property\":\"someValue\"}, {\"property\":\"someOtherValue\"}]}", "modelId", false)]
+        [InlineData("{\"key\":\"something\", \"number\":-212.1, \"data\":\"2022-02-22T22:22:22.222Z\"}", "modelId", false)]
         public void GivenAJsonMessage_AValidPatch_IsCreated(string message, string modelId, bool twinHasAllProperties)
         {
             var builder = new TwinPatchBuilder();
@@ -43,7 +45,7 @@ namespace adt_auto_ingester_tests.DigitalTwins.Builder
                  if (twinHasAllProperties)
                     twin.Contents.Add(property.Name, "existing value");                
                 var valueString = property.Value is JValue ? ((JValue)property.Value).ToString(CultureInfo.InvariantCulture) : property.Value.ToString();
-                expectedJson.Append($"{{\"op\":\"{(twinHasAllProperties ? "replace":"add")}\",\"path\":\"/{property.Name}\",\"value\":\"{valueString}\"}},");
+                expectedJson.Append($"{{\"op\":\"{(twinHasAllProperties ? "replace":"add")}\",\"path\":\"/{property.Name}\",\"value\":\"{valueString.Replace("\"", "\\u0022")}\"}},");
                 expectedJson.Append($"{{\"op\":\"replace\",\"path\":\"/$metadata/{property.Name}/sourceTime\",\"value\":\"{sourceTime}\"}}");
                 if(propertyIndex < properties.Count() - 1)
                     expectedJson.Append(",");
@@ -53,8 +55,10 @@ namespace adt_auto_ingester_tests.DigitalTwins.Builder
 
             var patch = builder.Build(MessageContextFromMessage(messageObject, ingestionContext), modelId, twin, sourceTime);
 
+            var expectMatch = expectedJson.ToString().Replace("\r",string.Empty).Replace("\n",string.Empty);
+            var actualPatch = patch.ToString().Replace("\\r",string.Empty).Replace("\\n",string.Empty);
 
-            Assert.Equal(expectedJson.ToString(), patch.ToString());
+            Assert.Equal(expectMatch,actualPatch);
         }
 
 
