@@ -1,5 +1,5 @@
 {
-    "azureFunctions.projectSubpath": "src",
+    "azureFunctions.projectSubpath": "/src",
     "azureFunctions.deploySubpath": "src/bin/Release/netcoreapp3.1/publish",
     "azureFunctions.projectLanguage": "C#",
     "azureFunctions.projectRuntime": "~3",
