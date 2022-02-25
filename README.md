@@ -2,10 +2,6 @@
 # Azure Digital Twin Auto Ingestor
 > Function app which Auto ingests data from an Event Hub into Azure Digital Twins
 
-[![.NET](https://github.com/WaywardHayward/adt-auto-ingestor/actions/workflows/dotnet.yml/badge.svg)](https://github.com/WaywardHayward/adt-auto-ingestor/actions/workflows/dotnet.yml)
-
-
-
 ## How to Run the Function Locally
 
 To debug this function locally in vscode you will require the following items.
@@ -16,7 +12,7 @@ To debug this function locally in vscode you will require the following items.
 
 _ℹ️ You must have [Access to the Azure Digital Twins instance](https://docs.microsoft.com/en-us/azure/digital-twins/how-to-set-up-instance-powershell#set-up-user-access-permissions "More on how to grand access to an Azure Digital Twins Instance can be found here.") you are running against __and__ have the role "Azure Digital Twins Data Owner" as a minimum to run this function app._
 
-This function app uses dotnetcore 3.1 LTS to build and run it use the standard dotnet commands.
+This function app uses dotnetcore 3.1 LTS to build and run it use the standard dotnet commands from within the src directory
 
 ```sh
 dotnet restore
