@@ -20,8 +20,6 @@ namespace tests.Ingestors.Generic
     {
         private string _twinInstance = "https://bing.com/";
 
-
-
         private IDigitalTwinsClientProvider GetDigitalTwinsClientProvider()
         {
             var mock = new Mock<IDigitalTwinsClientProvider>();
@@ -31,8 +29,17 @@ namespace tests.Ingestors.Generic
 
         private IngestionContext GetIngestionContext(IConfiguration configuration, LoggerFactory loggerFactory)
         {
-            var ingestionContext = new IngestionContext(new Logger<IngestionContext>(loggerFactory), configuration, GetDigitalTwinsClientProvider());           
+            var ingestionContext = new IngestionContext(new Logger<IngestionContext>(loggerFactory), configuration, GetDigitalTwinsClientProvider());
             return ingestionContext;
+        }
+
+        private IConfiguration GetConfigurationWith(string ingestionAdtTwinIdentifiers)
+        {
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[]
+            {
+                new KeyValuePair<string, string>(Constants.INGESTION_ADT_TWIN_IDENTIFIERS, ingestionAdtTwinIdentifiers)
+            }).Build();
+            return configuration;
         }
 
         [Theory]
@@ -43,31 +50,52 @@ namespace tests.Ingestors.Generic
         [InlineData("message-Id", "messageId", false)]
         public void GivenAMessage_ReturnsTheExpectedTokenValue(string identifierPaths, string pathWithId, bool expectMatch)
         {
-            
-            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[]
-            {
-                new KeyValuePair<string, string>(Constants.INGESTION_ADT_TWIN_IDENTIFIERS, identifierPaths)
-            }).Build();
-
+            var configuration = GetConfigurationWith(identifierPaths);
             var loggerFactory = new LoggerFactory();
             var ingestionContext = GetIngestionContext(configuration, loggerFactory);
             var deviceId = "MyDeviceId";
-            var message = new JObject() {
+            var message = new JObject()
+            {
                 [pathWithId ?? "notSpecified"] = deviceId
             };
 
             ingestionContext.SetIngestionMessage(new EventData(Encoding.UTF8.GetBytes(message.ToString())));
-
             var messageContext = MessageContext.FromIngestionContext(ingestionContext, message);
-
             var twinIdProvider = new GenericMessageTwinIdProvider(configuration, new Logger<GenericMessageTwinIdProvider>(loggerFactory));
-
             var result = twinIdProvider.PopulateTwinId(messageContext);
 
-            if(expectMatch)
+            if (expectMatch)
                 Assert.Equal(deviceId, result);
             else
                 Assert.NotEqual(deviceId, result);
+        }
+
+
+        [Fact]
+        public void GivenAMessageWithSystemPropertyIoTDeviceId_WhenNoOtherPropertiesArePresent_TheIoTDeviceIdIsUsed()
+        {
+            var iotDeviceId = "iot-device-id";
+            var messageDeviceId = "message-device-id";
+            var configuration = GetConfigurationWith(string.Empty);
+
+            var loggerFactory = new LoggerFactory();
+            var ingestionContext = GetIngestionContext(configuration, loggerFactory);
+            var message = new JObject()
+            {
+                ["messageDeviceId"] = messageDeviceId
+            };
+
+            var eventData = new EventData(Encoding.UTF8.GetBytes(message.ToString()));
+            eventData.SystemProperties = new EventData.SystemPropertiesCollection(1, DateTime.UtcNow, "0", "1");
+            eventData.SystemProperties.Add(Constants.IOT_DEVICE_ID_PROPERTY, iotDeviceId);
+            ingestionContext.SetIngestionMessage(eventData);
+
+            var messageContext = MessageContext.FromIngestionContext(ingestionContext, message);
+            var twinIdProvider = new GenericMessageTwinIdProvider(configuration, new Logger<GenericMessageTwinIdProvider>(loggerFactory));
+            var result = twinIdProvider.PopulateTwinId(messageContext);
+
+            Assert.NotEqual(messageDeviceId, result);
+            Assert.Equal(iotDeviceId, result);
         }
 
 

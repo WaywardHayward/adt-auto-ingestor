@@ -14,5 +14,7 @@ namespace adt_auto_ingester.Models
         public const string INGESTION_ADT_TIMESTAMP_IDENTIFIERS = "INGESTION_TIMESTAMP_IDENTIFIERS";
 
         public const string INGESTION_EVENT_HUB_NAME = "INGESTION_EVENTHUB_NAME";
+
+        public const string IOT_DEVICE_ID_PROPERTY = "iothub-connection-device-id";
     }
 }

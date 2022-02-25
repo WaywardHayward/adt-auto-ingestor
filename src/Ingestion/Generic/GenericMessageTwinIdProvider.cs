@@ -9,6 +9,7 @@ namespace adt_auto_ingester.Ingestion.Generic
 {
     public class GenericMessageTwinIdProvider : ITwinIdProvider
     {
+       
         private readonly ILogger<GenericMessageTwinIdProvider> _logger;
         private readonly IConfiguration _configuration;
         private readonly string[] _twinIdentifiers;
@@ -29,7 +30,7 @@ namespace adt_auto_ingester.Ingestion.Generic
                 currentTwinId = deviceId;
 
             if (string.IsNullOrEmpty(currentTwinId) && context.IngestionContext.EventData?.SystemProperties != null)
-                currentTwinId = context.IngestionContext.EventData.SystemProperties.ContainsKey("iothub-connection-device-id") ? context.IngestionContext.EventData.SystemProperties["iothub-connection-device-id"].ToString() : string.Empty;
+                currentTwinId = context.IngestionContext.EventData.SystemProperties.ContainsKey(Constants.IOT_DEVICE_ID_PROPERTY) ? context.IngestionContext.EventData.SystemProperties[Constants.IOT_DEVICE_ID_PROPERTY].ToString() : string.Empty;
 
             return currentTwinId;
         }
