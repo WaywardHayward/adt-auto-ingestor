@@ -20,7 +20,7 @@ namespace adt_auto_ingester.Ingestion.OPC
 {
     public class OpcMessageIngestor : AbstractMessageIngestor, IMessageIngestor
     {
-        public OpcMessageIngestor(ILogger<OpcMessageIngestor> log, DigitalTwinModelCache modelCache, OpcMessageTwinIdProvider idProvider, IConfiguration configuration, DigitalTwinCache twinCache) : base(modelCache, idProvider,log, configuration, twinCache)
+        public OpcMessageIngestor(LoggingAdapter log, DigitalTwinModelCache modelCache, OpcMessageTwinIdProvider idProvider, IConfiguration configuration, DigitalTwinCache twinCache) : base(modelCache, idProvider,log, configuration, twinCache)
         {
 
         }

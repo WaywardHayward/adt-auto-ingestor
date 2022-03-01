@@ -16,6 +16,7 @@ using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using adt_auto_ingester.Models;
 using src.AzureDigitalTwins.Builder;
+using adt_auto_ingester.Helpers;
 
 namespace adt_auto_ingester.Ingestion.Face
 {
@@ -23,7 +24,7 @@ namespace adt_auto_ingester.Ingestion.Face
     {
         protected readonly DigitalTwinModelCache _modelCache;
         protected readonly ITwinIdProvider _twinIdProvider;
-        protected readonly ILogger _logger;
+        protected readonly LoggingAdapter _logger;
         private readonly IConfiguration _configuration;
         protected readonly string[] _timestampIdentifiers;
         protected readonly string[] _modelIdentifiers;
@@ -31,7 +32,7 @@ namespace adt_auto_ingester.Ingestion.Face
         private readonly DigitalTwinCache _twinCache;
         private readonly TwinPatchBuilder _patchBuilder;
 
-        protected AbstractMessageIngestor(DigitalTwinModelCache modelCache, ITwinIdProvider twinIdProvider, ILogger log, IConfiguration configuration, DigitalTwinCache twinCache)
+        protected AbstractMessageIngestor(DigitalTwinModelCache modelCache, ITwinIdProvider twinIdProvider, LoggingAdapter log, IConfiguration configuration, DigitalTwinCache twinCache)
         {
             _modelCache = modelCache;
             _twinIdProvider = twinIdProvider;

@@ -17,7 +17,7 @@ namespace adt_auto_ingester.Ingestion.Generic
     public class GenericMessageIngestor : AbstractMessageIngestor, IMessageIngestor
     {
 
-        public GenericMessageIngestor(ILogger<GenericMessageIngestor> log, DigitalTwinModelCache modelCache, GenericMessageTwinIdProvider twinIdProvider, IConfiguration configuration, DigitalTwinCache twinCache) : base(modelCache, twinIdProvider, log, configuration, twinCache)
+        public GenericMessageIngestor(LoggingAdapter log, DigitalTwinModelCache modelCache, GenericMessageTwinIdProvider twinIdProvider, IConfiguration configuration, DigitalTwinCache twinCache) : base(modelCache, twinIdProvider, log, configuration, twinCache)
         {
 
         }
@@ -71,7 +71,7 @@ namespace adt_auto_ingester.Ingestion.Generic
 
                 if (!string.IsNullOrWhiteSpace(modelId))
                 {
-                    _logger.LogInformation($"Found Model Id {modelId} in Message via Property Path {path}");
+                    _logger.LogDebug($"Found Model Id {modelId} in Message via Property Path {path}");
                     return modelId;
                 }
             }
@@ -84,7 +84,7 @@ namespace adt_auto_ingester.Ingestion.Generic
            
             if (_timestampIdentifiers == null || _timestampIdentifiers.Length == 0)
             {
-                _logger.LogInformation($"\t No Timestamp Identifiers Found in Configuration");
+                _logger.LogDebug($"\t No Timestamp Identifiers Found in Configuration");
                 return defaultValue;
             }
 
@@ -95,7 +95,7 @@ namespace adt_auto_ingester.Ingestion.Generic
 
                 if (timestamp == null)
                 {
-                    _logger.LogInformation($"\t No Timestamp Found in Message via Property Path {timestampIdentifier}");
+                    _logger.LogDebug($"\t No Timestamp Found in Message via Property Path {timestampIdentifier}");
                     continue;
                 }
                 

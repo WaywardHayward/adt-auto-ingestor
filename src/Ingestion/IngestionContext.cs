@@ -10,11 +10,10 @@ using Azure.DigitalTwins.Core;
 using Microsoft.Azure.EventHubs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace adt_auto_ingester.Ingestion
 {
-    public class IngestionContext
+    public class IngestionContext : IDisposable
     {
         public string AdtUrl {get; private set;}
         public ILogger Log {get;private set;}
@@ -34,6 +33,12 @@ namespace adt_auto_ingester.Ingestion
         public void SetIngestionMessage(EventData eventData)
         {
             EventData = eventData;
+        }
+
+        public void Dispose()
+        {
+           DigitalTwinsClient = null;
+           EventData = null;
         }
     }
 }

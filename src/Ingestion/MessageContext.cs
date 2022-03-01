@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace adt_auto_ingester.Ingestion
 {
-    public class MessageContext
+    public class MessageContext : IDisposable
     {
         public IngestionContext IngestionContext { get; private set; }
 
@@ -27,6 +27,11 @@ namespace adt_auto_ingester.Ingestion
             var mContext = new MessageContext() { IngestionContext = context };
             mContext.SetMessage(item);
             return mContext;
+        }
+
+        public void Dispose()
+        {
+            Message = null;
         }
     }
 }

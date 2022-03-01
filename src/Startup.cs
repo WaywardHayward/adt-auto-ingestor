@@ -3,11 +3,14 @@ using System;
 using adt_auto_ingester;
 using adt_auto_ingester.AzureDigitalTwins;
 using adt_auto_ingester.AzureDigitalTwins.Face;
+using adt_auto_ingester.Helpers;
 using adt_auto_ingester.Ingestion;
 using adt_auto_ingester.Ingestion.Generic;
 using adt_auto_ingester.Ingestion.OPC;
 using adt_auto_ingester.Ingestion.TwinIQ;
 using adt_auto_ingestor.AzureDigitalTwins;
+using Azure.Core;
+using Azure.Identity;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +31,9 @@ namespace adt_auto_ingester
         public override void Configure(IFunctionsHostBuilder builder)
         {            
             builder.Services.AddLogging(s => s.AddConsole());
+            builder.Services.AddSingleton<LoggingAdapter>();
+            builder.Services.AddSingleton<TokenCredential>(s => new DefaultAzureCredential());
+            builder.Services.AddSingleton<Uri>((s) => new Uri(s.GetService<IConfiguration>()["INGESTION_TWIN_URL"]));
             builder.Services.AddSingleton<IDigitalTwinsClientProvider, DigitalTwinsClientProvider>();
             builder.Services.AddSingleton<DigitalTwinCache>();
             builder.Services.AddTransient<IngestionContext>();

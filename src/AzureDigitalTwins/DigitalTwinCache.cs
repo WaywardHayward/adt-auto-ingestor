@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using adt_auto_ingester.AzureDigitalTwins;
 using adt_auto_ingester.AzureDigitalTwins.Face;
+using adt_auto_ingester.Helpers;
 using Azure.DigitalTwins.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -16,14 +15,14 @@ namespace adt_auto_ingestor.AzureDigitalTwins
     public class DigitalTwinCache
     {
 
-        private readonly ILogger<DigitalTwinCache> _logger;
+        private readonly LoggingAdapter _logger;
         private readonly IConfiguration _configuration;
         private readonly IDigitalTwinsClientProvider _digitalTwinsClientProvider;
         private readonly DigitalTwinsClient _client;
         private readonly Timer _cacheTimer;
         private readonly ConcurrentDictionary<string, BasicDigitalTwin> _digitalTwins = new ConcurrentDictionary<string, BasicDigitalTwin>();
 
-        public DigitalTwinCache(ILogger<DigitalTwinCache> logger, IConfiguration configuration, IDigitalTwinsClientProvider digitalTwinsClientProvider)
+        public DigitalTwinCache(LoggingAdapter logger, IConfiguration configuration, IDigitalTwinsClientProvider digitalTwinsClientProvider)
         {
             _logger = logger;
             _configuration = configuration;
@@ -54,8 +53,8 @@ namespace adt_auto_ingestor.AzureDigitalTwins
             catch (Exception ex)
             {
                 CacheTwin(twinId, null);
-                _logger.LogDebug($"Twin Probably Not Found:\n{ex}");
-                _logger.LogDebug($"Twin with Id {twinId} does not exist");
+                _logger.LogInformation($"Twin Probably Not Found:\n{ex}");
+                _logger.LogInformation($"Twin with Id {twinId} does not exist");
             }
             return null;
         }

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using adt_auto_ingester.Helpers;
 using adt_auto_ingester.Ingestion;
 using Microsoft.Azure.EventHubs;
 using Microsoft.Azure.WebJobs;
@@ -21,12 +22,15 @@ namespace Microsoft.Adt.AutoIngestor
         private readonly IConfiguration _configuration;
         private readonly MessageIngestorFactory _ingestorFactory;
         private readonly IngestionContext _context;
+        private readonly LoggingAdapter _loggingAdapter;
 
-        public EventHubIngestor(IConfiguration configuration, MessageIngestorFactory ingestorFactory, IngestionContext context)
+        public EventHubIngestor(IConfiguration configuration, MessageIngestorFactory ingestorFactory, IngestionContext context, LoggingAdapter adapter)
         {
             _configuration = configuration;
             _ingestorFactory = ingestorFactory;
             _context = context;
+            _loggingAdapter = adapter;
+            
         }
 
         [FunctionName("EventHubIngestor")]
@@ -34,27 +38,29 @@ namespace Microsoft.Adt.AutoIngestor
         {
             var exceptions = new List<Exception>();
 
-            log.LogInformation($"Messages Recieved {events.Length}");
-
+            _loggingAdapter.SetLogger(log);
+            
             for (int i = 0; i < events.Length; i++)
             {
-                EventData eventData = events[i];
-                try
+                using (var eventData = events[i])
                 {
-                    _context.SetIngestionMessage(eventData);
-                    var messageBody = Encoding.UTF8.GetString(eventData.Body.Array, eventData.Body.Offset, eventData.Body.Count);
-                    var messages = GetMessageArray(messageBody);
-
-                    for (int messageIndex = 0; messageIndex < messages.Count; messageIndex++)
+                    try
                     {
-                        await ProcessMessage(log, messages, messageIndex);
+                        _context.SetIngestionMessage(eventData);
+                        var messageBody = Encoding.UTF8.GetString(eventData.Body.Array, eventData.Body.Offset, eventData.Body.Count);
+                        var messages = GetMessageArray(messageBody);
+
+                        for (int messageIndex = 0; messageIndex < messages.Count; messageIndex++)
+                        {
+                            await ProcessMessage(log, messages, messageIndex);
+                        }
+
+
                     }
-
-
-                }
-                catch (Exception e)
-                {
-                    exceptions.Add(e);
+                    catch (Exception e)
+                    {
+                        exceptions.Add(e);
+                    }
                 }
             }
 
@@ -83,16 +89,18 @@ namespace Microsoft.Adt.AutoIngestor
         {
             JToken message = messages[i1];
             var item = message as JObject;
-            var messageContext = MessageContext.FromIngestionContext(_context, item);
-            var ingestor = _ingestorFactory.Build(messageContext);
+            using (var messageContext = MessageContext.FromIngestionContext(_context, item))
+            {
+                var ingestor = _ingestorFactory.Build(messageContext);
 
-            if (ingestor != null)
-            {
-                await ingestor?.Ingest(messageContext);
-            }
-            else
-            {
-                log.LogWarning("No ingestor for message - ignoring...");
+                if (ingestor != null)
+                {
+                    await ingestor?.Ingest(messageContext);
+                }
+                else
+                {
+                    log.LogWarning("No ingestor for message - ignoring...");
+                }
             }
         }
     }

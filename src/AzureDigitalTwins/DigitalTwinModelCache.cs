@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using adt_auto_ingester.AzureDigitalTwins;
 using adt_auto_ingester.AzureDigitalTwins.Face;
+using adt_auto_ingester.Helpers;
 using Azure.DigitalTwins.Core;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -16,9 +17,9 @@ namespace adt_auto_ingestor.AzureDigitalTwins
 
         private DateTime _nextModelFetch = DateTime.MinValue;
         private readonly IDigitalTwinsClientProvider _digitalTwinClientProvider;
-        private readonly ILogger<DigitalTwinModelCache> _logger;
+        private readonly LoggingAdapter _logger;
 
-        public DigitalTwinModelCache(ILogger<DigitalTwinModelCache> logger, IDigitalTwinsClientProvider clientProvider)
+        public DigitalTwinModelCache(LoggingAdapter logger, IDigitalTwinsClientProvider clientProvider)
         {
             _digitalTwinClientProvider = clientProvider;
             _logger = logger;
@@ -43,7 +44,7 @@ namespace adt_auto_ingestor.AzureDigitalTwins
         {
             if (_nextModelFetch > DateTime.UtcNow)
             {
-                _logger.LogDebug("Using model Cache");
+                _logger.LogInformation("Using model Cache");
                 return _modelCache.Values.SelectMany(s => s).ToList();
             }
             _logger.LogInformation("All Keys {0}", string.Join(",", _modelCache.Keys));

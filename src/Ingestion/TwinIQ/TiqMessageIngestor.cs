@@ -21,7 +21,7 @@ namespace adt_auto_ingester.Ingestion.TwinIQ
     public class TwinIqMessageIngestor: AbstractMessageIngestor, IMessageIngestor
     {
 
-        public TwinIqMessageIngestor(ILogger<TwinIqMessageIngestor> log, DigitalTwinModelCache modelCache, TiqTwinIdProvider twinIdProvider, IConfiguration configuration, DigitalTwinCache twinCache) : base(modelCache, twinIdProvider, log, configuration, twinCache)
+        public TwinIqMessageIngestor(LoggingAdapter log, DigitalTwinModelCache modelCache, TiqTwinIdProvider twinIdProvider, IConfiguration configuration, DigitalTwinCache twinCache) : base(modelCache, twinIdProvider, log, configuration, twinCache)
         {
 
         }
