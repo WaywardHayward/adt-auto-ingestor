@@ -35,7 +35,7 @@ namespace adt_auto_ingester.Ingestion.Generic
             if (string.IsNullOrEmpty(currentTwinId) && context.IngestionContext.EventData?.SystemProperties != null)
                 currentTwinId = context.IngestionContext.EventData.SystemProperties.ContainsKey(Constants.IOT_DEVICE_ID_PROPERTY) ? context.IngestionContext.EventData.SystemProperties[Constants.IOT_DEVICE_ID_PROPERTY].ToString() : string.Empty;
 
-            return currentTwinId;
+            return currentTwinId.Replace("-","_");
         }
 
         private string GetTwinId(JObject message, string[] identifierPaths)
