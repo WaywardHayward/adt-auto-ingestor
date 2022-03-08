@@ -173,7 +173,10 @@ namespace adt_auto_ingester.Ingestion.Face
             var sourceTimestamp = GetSourceTimestamp(context); 
 
             foreach (var property in context.MessageProperties.Value.Keys){
-                newTwin.Contents.Add(property, ((JValue)context.Message.SelectToken(property)).ToString(CultureInfo.InvariantCulture));      
+
+                var value =context.Message.SelectToken(property);
+                var stringValue = value is JValue ? ((JValue)value).ToString(CultureInfo.InvariantCulture) : value.ToString();
+                newTwin.Contents.Add(property,stringValue);      
                 newTwin.Metadata.PropertyMetadata.Add(property, new DigitalTwinPropertyMetadata
                 {
                     SourceTime = new DateTimeOffset(DateTime.Parse(sourceTimestamp), TimeSpan.Zero)
