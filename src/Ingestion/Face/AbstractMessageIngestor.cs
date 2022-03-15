@@ -46,6 +46,7 @@ namespace adt_auto_ingester.Ingestion.Face
         }
 
         protected Task<List<DigitalTwinModel>> GetAllModels(string modelId) => _modelCache.GetModelsForId(modelId);
+        
         protected abstract Task<string> EnsureModelExists(MessageContext context);
 
         protected virtual async Task<string> EnsureModelExists(MessageContext context, string rawModelId, string name)

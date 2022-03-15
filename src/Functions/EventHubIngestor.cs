@@ -30,7 +30,7 @@ namespace Microsoft.Adt.AutoIngestor
             _ingestorFactory = ingestorFactory;
             _context = context;
             _loggingAdapter = adapter;
-            
+
         }
 
         [FunctionName("EventHubIngestor")]
@@ -39,7 +39,7 @@ namespace Microsoft.Adt.AutoIngestor
             var exceptions = new List<Exception>();
 
             _loggingAdapter.SetLogger(log);
-            
+
             for (int i = 0; i < events.Length; i++)
             {
                 using (var eventData = events[i])
@@ -49,12 +49,12 @@ namespace Microsoft.Adt.AutoIngestor
                         _context.SetIngestionMessage(eventData);
                         var messageBody = Encoding.UTF8.GetString(eventData.Body.Array, eventData.Body.Offset, eventData.Body.Count);
                         var messages = GetMessageArray(messageBody);
+                        var messageProcesses = new List<Task>();
 
                         for (int messageIndex = 0; messageIndex < messages.Count; messageIndex++)
-                        {
-                            await ProcessMessage(log, messages, messageIndex);
-                        }
+                            messageProcesses.Add(ProcessMessage(log, messages, messageIndex));
 
+                        await Task.WhenAll(messageProcesses);
 
                     }
                     catch (Exception e)
