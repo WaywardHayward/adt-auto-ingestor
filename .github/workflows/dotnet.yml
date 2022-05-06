@@ -27,7 +27,9 @@ jobs:
         # An explicit key for restoring and saving the cache
         key: adt-auto-ingestor-deps    
     - name: Build
-      run: dotnet build ./src/adt-auto-ingester.csproj --no-restore      
+      run: dotnet build ./src/adt-auto-ingester.csproj --no-restore   
+    - name: Test
+      run: dotnet test ./tests/adt-auto-ingester-tests.csproj
     - name: InferSharp
       uses: microsoft/infersharpaction@v1.0
       with:
