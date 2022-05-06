@@ -52,12 +52,7 @@ jobs:
           report_name: auto_ingester_tests
           report_title: Azure Digital Twin Auto Ingestor Tests
           gist_name: auto_ingester_tests.md
-          gist_badge_label: 'Auto Ingestor Tests: %Counters_passed%/%Counters_total%'          
-      - name: unit tests for Contoso Service Layer
-        uses: zyborg/dotnet-tests-report@v1
-        with:
-          project_path: tests/adt-auto-ingester-tests.csproj
-          report_name: auto_ingester_tests
-          report_title: Azure Digital Twin Auto Ingestor Tests
-          gist_name: contoso_service_tests.md
-          gist_badge_label: 'Contoso Service: %Counters_passed%/%Counters_total%'
+          gist_badge_label: 'Azure Digital Twin Auto Ingestor Tests: %Counters_passed%/%Counters_total%'     
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          gist_token: ${{ secrets.GIST_TOKEN }}
+      
