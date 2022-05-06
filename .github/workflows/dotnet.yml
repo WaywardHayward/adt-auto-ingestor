@@ -43,7 +43,7 @@ jobs:
       - name: Unit Tests For Azure Digital Twin Auto Ingestor
         uses: zyborg/dotnet-tests-report@v1
         with:
-          project_path: ./tests/adt-auto-ingester-tests.csproj
+          project_path: tests/adt-auto-ingester-tests.csproj
           report_name: auto_ingester_tests
           report_title: Azure Digital Twin Auto Ingestor Tests
           gist_name: auto_ingester_tests.md
@@ -51,7 +51,7 @@ jobs:
       - name: unit tests for Contoso Service Layer
         uses: zyborg/dotnet-tests-report@v1
         with:
-          project_path: ./tests/adt-auto-ingester-tests.csproj
+          project_path: tests/adt-auto-ingester-tests.csproj
           report_name: auto_ingester_tests
           report_title: Azure Digital Twin Auto Ingestor Tests
           gist_name: contoso_service_tests.md
