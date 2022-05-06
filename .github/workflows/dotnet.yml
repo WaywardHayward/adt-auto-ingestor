@@ -38,7 +38,7 @@ jobs:
         uses: zyborg/dotnet-tests-report@v1
         with:
           project_path: tests/adt-auto-ingester-tests.csproj
-          report_name: auto_ingester_tests
+          report_name: Azure Digital Twin Auto Ingester Tests
           report_title: Azure Digital Twin Auto Ingestor Tests
           gist_name: auto_ingester_tests.md
           gist_badge_label: 'Azure Digital Twin Auto Ingestor Tests: %Counters_passed%/%Counters_total%'     
