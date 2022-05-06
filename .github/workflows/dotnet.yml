@@ -40,6 +40,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.x
       - name: Unit Tests For Azure Digital Twin Auto Ingestor
         uses: zyborg/dotnet-tests-report@v1
         with:
