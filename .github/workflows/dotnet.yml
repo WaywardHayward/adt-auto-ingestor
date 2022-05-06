@@ -33,7 +33,7 @@ jobs:
     - name: Publish Unit Test Results
       uses: EnricoMi/publish-unit-test-result-action@v1
       with:
-        files: "./tests/test-results/**/*.xml"
+        files: "./tests/test-results/*.xml"
     - name: InferSharp
       uses: microsoft/infersharpaction@v1.0
       with:
