@@ -1,5 +1,6 @@
 
 # Azure Digital Twin Auto Ingestor
+[![.NET](https://github.com/WaywardHayward/adt-auto-ingestor/actions/workflows/dotnet.yml/badge.svg)](https://github.com/WaywardHayward/adt-auto-ingestor/actions/workflows/dotnet.yml)
 > Function app which Auto ingests data from an Event Hub into Azure Digital Twins
 
 ## How to Run the Function Locally
