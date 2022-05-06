@@ -44,4 +44,5 @@ jobs:
           gist_badge_label: 'Azure Digital Twin Auto Ingestor Tests: %Counters_passed%/%Counters_total%'     
           github_token: ${{ secrets.GITHUB_TOKEN }}
           gist_token: ${{ secrets.GIST_TOKEN }}
+          set_check_status_from_test_outcome: true
       
