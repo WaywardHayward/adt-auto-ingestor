@@ -8,9 +8,8 @@ on:
 
 jobs:
   build:
-
+    name: Build Function App
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET
@@ -27,6 +26,7 @@ jobs:
     - name: Build
       run: dotnet build ./src/adt-auto-ingester.csproj --no-restore   
   test:
+    name: Run Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
