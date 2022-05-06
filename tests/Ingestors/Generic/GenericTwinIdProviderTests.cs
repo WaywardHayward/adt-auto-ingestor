@@ -46,7 +46,7 @@ namespace adt_auto_ingester_tests.Ingestors.Generic
         [Fact]
         public void GivenAMessageWithSystemPropertyIoTDeviceId_WhenNoOtherPropertiesArePresent_TheIoTDeviceIdIsUsed()
         {
-            var iotDeviceId = "iot-device-id";
+            var iotDeviceId = "iot_device_id";
             var messageDeviceId = "message-device-id";
             var configuration = GetConfigurationWith(string.Empty);
 
