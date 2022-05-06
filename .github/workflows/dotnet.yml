@@ -30,8 +30,8 @@ jobs:
       run: dotnet build ./src/adt-auto-ingester.csproj --no-restore   
     - name: Test
       run: dotnet test ./tests/adt-auto-ingester-tests.csproj --results-directory ./tests/test-results/
-    - name: Publish Unit Test Results
-      uses: EnricoMi/publish-unit-test-result-action@v1
+    - name: Publish Test Results
+    - uses: PublishTestResults@2
       with:
         files: "./tests/test-results/*.xml"
     - name: InferSharp
