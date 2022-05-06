@@ -29,11 +29,7 @@ jobs:
     - name: Build
       run: dotnet build ./src/adt-auto-ingester.csproj --no-restore   
     - name: Test
-      run: dotnet test ./tests/adt-auto-ingester-tests.csproj --results-directory ./tests/test-results/
-    - name: Publish Test Results
-    - uses: PublishTestResults@2
-      with:
-        files: "./tests/test-results/*.xml"
+      run: dotnet test ./tests/adt-auto-ingester-tests.csproj --results-directory ./tests/test-results/    
     - name: InferSharp
       uses: microsoft/infersharpaction@v1.0
       with:
