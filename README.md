@@ -16,6 +16,10 @@ _ℹ️ You must have [Access to the Azure Digital Twins instance](https://docs.
 This function app uses dotnetcore 3.1 LTS to build and run it use the standard dotnet commands from within the src directory
 
 ```sh
+cd src
+```
+
+```sh
 dotnet restore
 ```
 
