@@ -48,7 +48,6 @@ The following settings are required on top of the standard Azure Function app se
 | INGESTION_ADT_TWIN_IDENTIFIERS | string | An Optional Property, comprising of a semi-colon separated list of Json Paths to extract the Twin Identifier from the Generic Messages. if not supplied the Path message.DeviceId or the iot-device-identifier from the message properties are used. |
 | INGESTION_MODEL_IDENTIFIERS | string | An Optional Property, comprising of a semi-colon separated list of Json Paths to extract the Model Identifier from the Generic Messages. if not supplied the Path message.ModelId or the iot-model-identifier from the message properties are used. |
 | INGESTION_TIMESTAMP_IDENTIFIERS | string | An Optional Property, comprising of a semi-colon separated list of Json Paths to extract the Timestamp from the Generic Messages. if not supplied the The current time in UTC is used  |
-| INGESTION_TIQ_ENABLED | boolean | An Optional Property, defines if the function app should auto provision Twin IQ Sensors - when not supplied is treated as false |
 | INGESTION_OPC_ENABLED | boolean | An Optional Property, defines if the function app should auto ingest OPC Sensors - when not supplied is treated as false |
 | INGESTION_GENERIC_ENABLED | boolean | An Optional Property, defines if the function app should auto ingest any messages - when not supplied is treated as false |
 
@@ -101,61 +100,6 @@ or
       "Value": "10.11.2017 14:03:17",
       "SourceTimestamp": "2017-11-10T14:03:17Z"
   }
-
-```
-
-## Twin IQ Message Ingestion
-
-When the flag __INGESTION_TIQ_ENABLED__ is set to true, the function will ingest messages which are identified as Twin IQ messages into a Twin.
-
-Messages are identified as destined for a twin by the following properties.
-
-- Routing is present
-- Routing.MessageType == 'tiq-ingest-telemetry'
-- Routing.TiqTwinEnabled == true
-
-The function will automatically provision a Twin IQ sensor Model and create a Twin per node id specified in the twin routing section of the message.
-
-### Expected Twin IQ Message Format
-
-The message format the ingester expects for TwinIQ is as below/
-
-```json
-
-{ 
-
-    "Routing" : // The routing section identifies where in the system the message must be routed to 
-    { 
-      "MessageType": "<tiq-ingest-telemetry|tiq-compute-python-result|tiq-compute-optimization-progress|tiq-compute-optimization-complete>", // Single enum option identifying message type 
-      "TiqUnity": 
-      { 
-        "Enabled" : <true|false> // If true, message will be routed to the streaming web socket (SocketRelay API) for access by Unity 
-      }, 
-      "TiqApc" : 
-      { 
-        "Enabled" : <true|false> // If true, the message will be routed to APC Manager for use in APC modelling 
-      }, 
-      "TiqTwin":             
-      { 
-        "Enabled": <true|false>, // If true, the message will be routed to the Azure Digital Twin node to update the PropertyName of node NodeId with Payload.Value 
-        "NodeId":"<GUID>", // Unique NodeId of from the Management Engine representing an entity, such as a specific Case Packer ("12345-abcde-67890-fghij") 
-        "PropertyName": "<string>", // The PropertyName on the node represented by NodeId from the Management Engine (e.g. "ProductIn") 
-        "PropertyType": "<bool|double|integer|datetime|duration|string>"   // Data type of Payload.Value property 
-      } 
-    }, 
-    "Payload": { // The actual data Payload, properties provided will vary depending on type of DTO generated 
-
-      "IQPointId":"<string>",    // The Unique Identifier for the Telemetry Point 
-      "IotDeviceId": "<string>", // The IoT Edge / or IoT Device from which the telemetry originates (e.g. "uni-iot-device-05") 
-      "SensorId": "<string>",    // The sensor type from which the telemetry originates (e.g. "opcua") 
-      "SiteId": "<string>",      // The site ID from the Management Engine from which the telemetry originates (e.g. "valinhos") 
-      "MachineId": "<string>",   // The machine ID from the Management Engine from which the telemetry originates (e.g. "case packer") 
-      "Tag": "<string>",         // The source tag name for this telemetry reading (e.g. "Dove/Enterprise::[FLEXLINK]D03_Case_Packer_Product_In") 
-      "TS": "<string>",           // The timestamp the reading was taken in UTC format (e.g. "2018-10-20T01:46:14.7853805Z") 
-      "UoM": "<string>",          // The Unit of measure for the data point 
-      "Value": <number|string|bool>,   // The value of the reading (e.g. 2397603) 
-    } 
-} 
 
 ```
 
